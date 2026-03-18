@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lost Tools - Tool Rental Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../js/dummy-data.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/layout.js"></script>
+</head>
+<body class="bg-gray-100">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'Lost Tools';
+
+      const pageContent = document.getElementById('page-content');
+      if (!pageContent) return;
+
+      let html = `
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">Lost Tools Report</h2>
+          <p class="text-sm text-gray-600 mt-2">Tools marked as lost during rental period</p>
+        </div>
+
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div id="lost-tools-table"></div>
+        </div>
+      `;
+
+      pageContent.innerHTML = html;
+
+      function renderLostToolsTable() {
+        const tableContainer = document.getElementById('lost-tools-table');
+        
+        if (dummyData.lostTools.length === 0) {
+          tableContainer.innerHTML = '<div class="p-8 text-center"><p class="text-gray-600">No lost tools recorded</p></div>';
+          return;
+        }
+
+        let html = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50 border-b border-gray-200"><tr>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Tool Code</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Tool Name</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Serial Number</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Replacement Value</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Lost Date</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Invoice</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Customer</th>';
+        html += '</tr></thead><tbody>';
+
+        dummyData.lostTools.forEach(tool => {
+          html += `
+            <tr class="border-b hover:bg-gray-50 transition bg-red-50">
+              <td class="px-6 py-4 font-semibold text-red-700">${tool.toolCode}</td>
+              <td class="px-6 py-4">${tool.toolName}</td>
+              <td class="px-6 py-4 text-gray-600">${tool.serialNumber}</td>
+              <td class="px-6 py-4 font-semibold text-red-600">${App.formatCurrency(tool.replacementValue)}</td>
+              <td class="px-6 py-4">${App.formatDate(tool.lostDate)}</td>
+              <td class="px-6 py-4">${tool.invoiceNumber}</td>
+              <td class="px-6 py-4">${tool.customerName}</td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table></div>';
+        tableContainer.innerHTML = html;
+      }
+
+      renderLostToolsTable();
+    });
+  </script>
+</body>
+</html>

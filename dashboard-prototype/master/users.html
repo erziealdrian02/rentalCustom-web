@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users - Tool Rental Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../js/dummy-data.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/forms.js"></script>
+  <script src="../js/layout.js"></script>
+</head>
+<body class="bg-gray-100">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'User Management';
+
+      const pageContent = document.getElementById('page-content');
+      if (!pageContent) return;
+
+      let users = [...dummyData.users];
+
+      let html = `
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">System Users</h2>
+          <button onclick="FormManager.openModal('add-user-modal')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Add User
+          </button>
+        </div>
+
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div id="users-table"></div>
+        </div>
+
+        <div id="add-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-semibold text-gray-900">Add User</h3>
+              <button onclick="FormManager.closeModal('add-user-modal')" data-close-modal class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+
+            <form id="user-form" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input type="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <select name="role" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option>Administrator</option>
+                  <option>Warehouse Manager</option>
+                  <option>Staff</option>
+                  <option>Clerk</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select name="status" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option>Active</option>
+                  <option>Inactive</option>
+                </select>
+              </div>
+
+              <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
+                Save User
+              </button>
+            </form>
+          </div>
+        </div>
+      `;
+
+      pageContent.innerHTML = html;
+
+      FormManager.setupModalClose('add-user-modal');
+      FormManager.setupFormSubmit('user-form', (data) => {
+        const newUser = {
+          id: Math.max(...dummyData.users.map(u => u.id)) + 1,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          status: data.status,
+        };
+
+        dummyData.users.push(newUser);
+        users = [...dummyData.users];
+        renderUsersTable();
+        FormManager.closeModal('add-user-modal');
+        FormManager.clearForm('user-form');
+        window.app.showNotification('User added successfully!', 'success');
+      });
+
+      function renderUsersTable() {
+        const tableContainer = document.getElementById('users-table');
+        let html = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50 border-b border-gray-200"><tr>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Name</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Email</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Role</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Status</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Actions</th>';
+        html += '</tr></thead><tbody>';
+
+        users.forEach((user, idx) => {
+          const statusColor = App.getStatusBadgeColor(user.status);
+          const roleColor = user.role === 'Administrator' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+          html += `
+            <tr class="border-b hover:bg-gray-50 transition">
+              <td class="px-6 py-4 font-semibold">${user.name}</td>
+              <td class="px-6 py-4 text-gray-600">${user.email}</td>
+              <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded ${roleColor}">${user.role}</span></td>
+              <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded ${statusColor}">${user.status}</span></td>
+              <td class="px-6 py-4">
+                <div class="flex gap-2">
+                  <button onclick="editUser(${idx})" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">Edit</button>
+                  <button onclick="deleteUser(${idx})" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table></div>';
+        tableContainer.innerHTML = html;
+      }
+
+      window.editUser = function(idx) {
+        const user = users[idx];
+        FormManager.openModal('add-user-modal');
+        document.querySelector('#add-user-modal h3').textContent = 'Edit User';
+        FormManager.populateForm('user-form', {
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+        });
+      };
+
+      window.deleteUser = function(idx) {
+        if (confirm('Are you sure you want to delete this user?')) {
+          users.splice(idx, 1);
+          dummyData.users = [...users];
+          renderUsersTable();
+          window.app.showNotification('User deleted successfully!', 'success');
+        }
+      };
+
+      renderUsersTable();
+    });
+  </script>
+</body>
+</html>

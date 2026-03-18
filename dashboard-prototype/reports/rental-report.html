@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rental Report - Tool Rental Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="../js/dummy-data.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/charts.js"></script>
+  <script src="../js/layout.js"></script>
+</head>
+<body class="bg-gray-100">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'Rental Report';
+
+      const pageContent = document.getElementById('page-content');
+      if (!pageContent) return;
+
+      let html = `
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">Rental Report</h2>
+          <div class="flex gap-2">
+            <input type="date" id="start-date" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="date" id="end-date" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="exportReport()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              Export
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Total Rentals</p>
+            <p class="text-3xl font-bold text-gray-900 mt-2">${dummyData.rentals.length}</p>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Active Rentals</p>
+            <p class="text-3xl font-bold text-green-600 mt-2">${dummyData.rentals.filter(r => r.status === 'Active').length}</p>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Completed Rentals</p>
+            <p class="text-3xl font-bold text-blue-600 mt-2">${dummyData.rentals.filter(r => r.status === 'Completed').length}</p>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Avg Rental Value</p>
+            <p class="text-3xl font-bold text-purple-600 mt-2">${App.formatCurrency(dummyData.rentals.reduce((sum, r) => sum + r.totalPrice, 0) / dummyData.rentals.length)}</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Rental Trends</h3>
+            <canvas id="rentalTrendsChart" height="300"></canvas>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Tool Popularity</h3>
+            <canvas id="toolPopularityChart" height="300"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Rental Details</h3>
+          <div id="rental-table"></div>
+        </div>
+      `;
+
+      pageContent.innerHTML = html;
+
+      const today = new Date();
+      const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+      document.getElementById('start-date').value = monthAgo.toISOString().split('T')[0];
+      document.getElementById('end-date').value = today.toISOString().split('T')[0];
+
+      function renderReportData() {
+        // Rental Trends Chart
+        const rentalData = ChartManager.createBarChartData(
+          dummyData.monthlyRentals.map(d => d.month),
+          dummyData.monthlyRentals.map(d => d.rentals),
+          'Number of Rentals'
+        );
+        ChartManager.initChart('rentalTrendsChart', 'bar', rentalData, ChartManager.barChartOptions());
+
+        // Tool Popularity Chart
+        const toolCounts = {};
+        dummyData.rentals.forEach(rental => {
+          toolCounts[rental.toolName] = (toolCounts[rental.toolName] || 0) + 1;
+        });
+
+        const toolPopularityData = ChartManager.createBarChartData(
+          Object.keys(toolCounts),
+          Object.values(toolCounts),
+          'Rental Count'
+        );
+        ChartManager.initChart('toolPopularityChart', 'bar', toolPopularityData, ChartManager.barChartOptions());
+
+        // Rental Details Table
+        const tableContainer = document.getElementById('rental-table');
+        let html = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50 border-b border-gray-200"><tr>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Invoice</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Customer</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Tool</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Period</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Price</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Status</th>';
+        html += '</tr></thead><tbody>';
+
+        dummyData.rentals.forEach(rental => {
+          const statusColor = App.getStatusBadgeColor(rental.status);
+          html += `
+            <tr class="border-b hover:bg-gray-50 transition">
+              <td class="px-6 py-4 font-semibold">${rental.invoiceNumber}</td>
+              <td class="px-6 py-4">${rental.customerName}</td>
+              <td class="px-6 py-4">${rental.toolName}</td>
+              <td class="px-6 py-4 text-sm">${App.formatDate(rental.startDate)} - ${App.formatDate(rental.endDate)}</td>
+              <td class="px-6 py-4 font-semibold">${App.formatCurrency(rental.totalPrice)}</td>
+              <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-semibold rounded ${statusColor}">${rental.status}</span></td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table></div>';
+        tableContainer.innerHTML = html;
+      }
+
+      window.exportReport = function() {
+        alert('Export functionality would generate a PDF/CSV file with the current report data.');
+      };
+
+      setTimeout(renderReportData, 100);
+    });
+  </script>
+</body>
+</html>

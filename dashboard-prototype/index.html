@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tool Rental Management Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media (max-width: 768px) {
+      body {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full">
+      <!-- Welcome Card -->
+      <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-12 text-center text-white">
+          <div class="flex items-center justify-center gap-3 mb-4">
+            <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+              </svg>
+            </div>
+            <h1 class="text-4xl font-bold">ToolRental Pro</h1>
+          </div>
+          <p class="text-blue-100 text-lg">Complete Tool Rental Management System</p>
+        </div>
+
+        <!-- Content -->
+        <div class="px-8 py-12">
+          <!-- Demo Credentials -->
+          <div class="mb-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Demo Credentials
+            </h2>
+            <div class="space-y-2 text-sm">
+              <div>
+                <span class="font-semibold text-gray-700">Email:</span>
+                <code class="bg-white px-3 py-1 rounded border border-blue-300 ml-2 text-blue-600">admin@toolrental.com</code>
+              </div>
+              <div>
+                <span class="font-semibold text-gray-700">Password:</span>
+                <code class="bg-white px-3 py-1 rounded border border-blue-300 ml-2 text-blue-600">password123</code>
+              </div>
+            </div>
+          </div>
+
+          <!-- Features List -->
+          <div class="mb-8">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Features
+            </h2>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="flex gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-gray-700">Collapsible responsive sidebar</span>
+              </div>
+              <div class="flex gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-gray-700">Mobile-first responsive design</span>
+              </div>
+              <div class="flex gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-gray-700">Interactive dashboard charts</span>
+              </div>
+              <div class="flex gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-gray-700">Complete CRUD operations</span>
+              </div>
+              <div class="flex gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-gray-700">Dummy data for all features</span>
+              </div>
+              <div class="flex gap-3">
+                <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-gray-700">30+ pages with full navigation</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Responsive Features -->
+          <div class="mb-8 p-6 bg-indigo-50 rounded-lg border border-indigo-200">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 20h8a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+              </svg>
+              Responsive Features
+            </h2>
+            <ul class="space-y-2 text-sm text-gray-700">
+              <li>• <strong>Desktop:</strong> Full sidebar with collapse toggle - sidebar width switches from 256px to 80px</li>
+              <li>• <strong>Tablet:</strong> Optimized layout with responsive padding and grid adjustments</li>
+              <li>• <strong>Mobile:</strong> Hidden sidebar with hamburger menu and overlay - click to open/close</li>
+              <li>• <strong>All:</strong> Smooth transitions and animations for better UX</li>
+            </ul>
+          </div>
+
+          <!-- Get Started Button -->
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-8 text-center text-white mb-8">
+            <h3 class="text-xl font-semibold mb-2">Ready to explore?</h3>
+            <p class="mb-6 text-blue-100">Click the button below to enter the dashboard</p>
+            <a href="login.html" class="inline-block bg-white text-blue-600 font-semibold px-8 py-3 rounded-lg hover:bg-blue-50 transition transform hover:scale-105">
+              Go to Login
+            </a>
+          </div>
+
+          <!-- System Overview -->
+          <div class="space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900">System Overview</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 class="font-semibold text-gray-900 mb-2">Master Data</h3>
+                <p class="text-sm text-gray-600">Manage Tools, Categories, Warehouses, Customers, Pricing, and Users</p>
+              </div>
+              <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 class="font-semibold text-gray-900 mb-2">Warehouse Stock</h3>
+                <p class="text-sm text-gray-600">Track inventory across warehouses with movement history</p>
+              </div>
+              <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 class="font-semibold text-gray-900 mb-2">Rentals & Shipping</h3>
+                <p class="text-sm text-gray-600">Create and manage rental transactions with delivery notes</p>
+              </div>
+              <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 class="font-semibold text-gray-900 mb-2">Monitoring & Reports</h3>
+                <p class="text-sm text-gray-600">Track active rentals and generate detailed business reports</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 px-8 py-6 border-t border-gray-200 text-center text-sm text-gray-600">
+          <p>Tool Rental Management Dashboard - Built with HTML, TailwindCSS, and Vanilla JavaScript</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

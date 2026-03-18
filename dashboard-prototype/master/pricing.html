@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rental Pricing - Tool Rental Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../js/dummy-data.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/forms.js"></script>
+  <script src="../js/layout.js"></script>
+</head>
+<body class="bg-gray-100">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'Rental Pricing';
+
+      const pageContent = document.getElementById('page-content');
+      if (!pageContent) return;
+
+      let pricing = [...dummyData.pricing];
+
+      let html = `
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">Rental Pricing Setup</h2>
+          <button onclick="FormManager.openModal('add-pricing-modal')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Add Pricing
+          </button>
+        </div>
+
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div id="pricing-table"></div>
+        </div>
+
+        <div id="add-pricing-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 max-h-96 overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-semibold text-gray-900">Add Pricing</h3>
+              <button onclick="FormManager.closeModal('add-pricing-modal')" data-close-modal class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+
+            <form id="pricing-form" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tool</label>
+                <select name="toolId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Select Tool</option>
+                  ${dummyData.tools.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Daily Rate ($)</label>
+                <input type="number" name="dailyRate" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Weekly Rate ($)</label>
+                <input type="number" name="weeklyRate" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Rate ($)</label>
+                <input type="number" name="monthlyRate" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+
+              <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
+                Save Pricing
+              </button>
+            </form>
+          </div>
+        </div>
+      `;
+
+      pageContent.innerHTML = html;
+
+      FormManager.setupModalClose('add-pricing-modal');
+      FormManager.setupFormSubmit('pricing-form', (data) => {
+        const tool = dummyData.tools.find(t => t.id === parseInt(data.toolId));
+        const newPricing = {
+          id: Math.max(...dummyData.pricing.map(p => p.id)) + 1,
+          toolId: parseInt(data.toolId),
+          toolName: tool.name,
+          dailyRate: parseFloat(data.dailyRate),
+          weeklyRate: parseFloat(data.weeklyRate),
+          monthlyRate: parseFloat(data.monthlyRate),
+        };
+
+        dummyData.pricing.push(newPricing);
+        pricing = [...dummyData.pricing];
+        renderPricingTable();
+        FormManager.closeModal('add-pricing-modal');
+        FormManager.clearForm('pricing-form');
+        window.app.showNotification('Pricing added successfully!', 'success');
+      });
+
+      function renderPricingTable() {
+        const tableContainer = document.getElementById('pricing-table');
+        let html = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50 border-b border-gray-200"><tr>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Tool Name</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Daily Rate</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Weekly Rate</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Monthly Rate</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Actions</th>';
+        html += '</tr></thead><tbody>';
+
+        pricing.forEach((price, idx) => {
+          html += `
+            <tr class="border-b hover:bg-gray-50 transition">
+              <td class="px-6 py-4 font-semibold">${price.toolName}</td>
+              <td class="px-6 py-4">${App.formatCurrency(price.dailyRate)}</td>
+              <td class="px-6 py-4">${App.formatCurrency(price.weeklyRate)}</td>
+              <td class="px-6 py-4">${App.formatCurrency(price.monthlyRate)}</td>
+              <td class="px-6 py-4">
+                <div class="flex gap-2">
+                  <button onclick="editPricing(${idx})" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">Edit</button>
+                  <button onclick="deletePricing(${idx})" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table></div>';
+        tableContainer.innerHTML = html;
+      }
+
+      window.editPricing = function(idx) {
+        const price = pricing[idx];
+        FormManager.openModal('add-pricing-modal');
+        document.querySelector('#add-pricing-modal h3').textContent = 'Edit Pricing';
+        FormManager.populateForm('pricing-form', {
+          toolId: price.toolId,
+          dailyRate: price.dailyRate,
+          weeklyRate: price.weeklyRate,
+          monthlyRate: price.monthlyRate,
+        });
+      };
+
+      window.deletePricing = function(idx) {
+        if (confirm('Are you sure you want to delete this pricing?')) {
+          pricing.splice(idx, 1);
+          dummyData.pricing = [...pricing];
+          renderPricingTable();
+          window.app.showNotification('Pricing deleted successfully!', 'success');
+        }
+      };
+
+      renderPricingTable();
+    });
+  </script>
+</body>
+</html>

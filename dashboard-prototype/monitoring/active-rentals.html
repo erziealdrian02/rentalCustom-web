@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Rentals - Tool Rental Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../js/dummy-data.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/layout.js"></script>
+</head>
+<body class="bg-gray-100">
+  <style>
+    .modal { display: none; }
+    .modal.active { display: flex; }
+  </style>
+
+  <!-- Rental Details Modal -->
+  <div id="rentalDetailsModal" class="modal fixed inset-0 bg-black/50 z-50 items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+      <div class="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900">Rental Details</h2>
+        <button onclick="closeRentalModal()" class="text-gray-500 hover:text-gray-700">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div id="rentalModalContent" class="p-6 space-y-6"></div>
+
+      <div class="border-t p-6 flex gap-3 justify-end bg-gray-50">
+        <button onclick="closeRentalModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openRentalModal(rentalId) {
+      const rental = dummyData.rentals.find(r => r.id === rentalId);
+      if (!rental) return;
+
+      const daysRemaining = Math.ceil((new Date(rental.rentalEndDate) - new Date()) / (1000 * 60 * 60 * 24));
+      const totalRevenue = rental.items.reduce((sum, item) => sum + item.subtotal, 0);
+
+      let html = `
+        <div class="space-y-6">
+          <!-- Header -->
+          <div class="grid grid-cols-2 gap-4 pb-4 border-b">
+            <div>
+              <p class="text-gray-600 text-sm">Invoice Number</p>
+              <p class="text-lg font-semibold text-gray-900">${rental.invoiceNumber}</p>
+            </div>
+            <div>
+              <p class="text-gray-600 text-sm">Status</p>
+              <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold ${App.getStatusBadgeColor(rental.rentalStatus)}">${rental.rentalStatus}</span>
+            </div>
+            <div>
+              <p class="text-gray-600 text-sm">Customer</p>
+              <p class="text-lg font-semibold text-gray-900">${rental.customerName}</p>
+            </div>
+            <div>
+              <p class="text-gray-600 text-sm">Created</p>
+              <p class="text-lg font-semibold text-gray-900">${App.formatDate(rental.createdDate)}</p>
+            </div>
+          </div>
+
+          <!-- Days Remaining -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-900 mb-3">Rental Timeline</h4>
+            <div class="grid grid-cols-3 gap-4">
+              <div>
+                <p class="text-gray-600 text-sm">Start Date</p>
+                <p class="font-semibold text-gray-900">${App.formatDate(rental.rentalStartDate)}</p>
+              </div>
+              <div>
+                <p class="text-gray-600 text-sm">End Date</p>
+                <p class="font-semibold text-gray-900">${App.formatDate(rental.rentalEndDate)}</p>
+              </div>
+              <div>
+                <p class="text-gray-600 text-sm">Days Remaining</p>
+                <p class="font-bold text-lg ${daysRemaining < 0 ? 'text-red-600' : daysRemaining <= 3 ? 'text-yellow-600' : 'text-green-600'}">${daysRemaining} days</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Delivery Information -->
+          ${rental.driverName ? `
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 class="font-semibold text-gray-900 mb-3">Delivery Information</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="text-gray-600 text-sm">Driver</p>
+                  <p class="font-semibold text-gray-900">${rental.driverName}</p>
+                </div>
+                <div>
+                  <p class="text-gray-600 text-sm">Location</p>
+                  <p class="font-semibold text-gray-900">${rental.deliveryLocation}</p>
+                </div>
+                ${rental.estimatedDeliveryTime ? `
+                  <div class="col-span-2">
+                    <p class="text-gray-600 text-sm">Estimated Delivery Time</p>
+                    <p class="font-semibold text-gray-900">${rental.estimatedDeliveryTime}</p>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          ` : `
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p class="text-gray-900">Delivery not yet assigned</p>
+            </div>
+          `}
+
+          <!-- Rented Items -->
+          <div>
+            <h4 class="font-semibold text-gray-900 mb-3">Rented Items</h4>
+            <div class="space-y-2 border rounded-lg overflow-hidden">
+              ${rental.items.map((item, idx) => `
+                <div class="flex items-center justify-between p-4 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-b last:border-b-0">
+                  <div class="flex-1">
+                    <p class="font-semibold text-gray-900">${item.toolName}</p>
+                    <p class="text-sm text-gray-600">Qty: ${item.quantity} × ${App.formatCurrency(item.dailyRate)}/day</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-semibold text-gray-900">${App.formatCurrency(item.subtotal)}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Revenue Summary -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p class="text-gray-600 text-sm">Total Revenue</p>
+              <p class="text-2xl font-bold text-green-700">${App.formatCurrency(totalRevenue)}</p>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p class="text-gray-600 text-sm">Daily Average</p>
+              <p class="text-2xl font-bold text-blue-700">${App.formatCurrency(totalRevenue / Math.max(1, Math.ceil((new Date(rental.rentalEndDate) - new Date(rental.rentalStartDate)) / (1000 * 60 * 60 * 24))))}</p>
+            </div>
+          </div>
+
+          <!-- Status Update -->
+          <div class="border-t pt-4">
+            <h4 class="font-semibold text-gray-900 mb-3">Update Status</h4>
+            <div class="grid grid-cols-2 gap-2">
+              ${['On Track', 'Delivered', 'Pending', 'Menunggak', 'Returning', 'On Check'].map(status => `
+                <button onclick="updateRentalStatus(${rental.id}, '${status}')" class="px-3 py-2 rounded-lg text-sm font-semibold border transition ${rental.rentalStatus === status ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'}">
+                  ${status}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('rentalModalContent').innerHTML = html;
+      document.getElementById('rentalDetailsModal').classList.add('active');
+    }
+
+    function closeRentalModal() {
+      document.getElementById('rentalDetailsModal').classList.remove('active');
+    }
+
+    function updateRentalStatus(rentalId, newStatus) {
+      const rental = dummyData.rentals.find(r => r.id === rentalId);
+      if (rental) {
+        rental.rentalStatus = newStatus;
+        alert(`Status updated to: ${newStatus}`);
+        openRentalModal(rentalId);
+        renderRentals();
+      }
+    }
+
+    function renderRentals() {
+      const pageContent = document.getElementById('page-content');
+      if (!pageContent) return;
+
+      const activeRentals = dummyData.rentals.filter(r => r.rentalStatus !== 'On Check');
+
+      let html = `
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">Active Rental Monitoring</h2>
+          <div class="text-sm text-gray-600">
+            Total Active: <span class="font-semibold text-gray-900">${activeRentals.length}</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      `;
+
+      activeRentals.forEach(rental => {
+        const daysRemaining = Math.ceil((new Date(rental.rentalEndDate) - new Date()) / (1000 * 60 * 60 * 24));
+        const statusColor = daysRemaining < 0 ? 'from-red-500 to-red-600' : daysRemaining <= 3 ? 'from-yellow-500 to-yellow-600' : 'from-green-500 to-green-600';
+        const badgeColor = daysRemaining < 0 ? 'bg-red-100 text-red-800' : daysRemaining <= 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
+
+        html += `
+          <button onclick="openRentalModal(${rental.id})" class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition text-left">
+            <div class="bg-gradient-to-r ${statusColor} text-white p-4">
+              <h3 class="font-bold text-lg">${rental.invoiceNumber}</h3>
+              <p class="text-sm opacity-90">${rental.customerName}</p>
+            </div>
+
+            <div class="p-4 space-y-3">
+              <!-- Items -->
+              <div>
+                <p class="text-xs text-gray-600 font-semibold uppercase">Items</p>
+                <p class="font-semibold text-gray-900">${rental.items.map(i => i.toolName).join(', ')}</p>
+              </div>
+
+              <!-- Days Remaining -->
+              <div class="bg-gray-50 rounded p-3">
+                <p class="text-xs text-gray-600 uppercase font-semibold">Days Remaining</p>
+                <p class="text-2xl font-bold ${daysRemaining < 0 ? 'text-red-600' : daysRemaining <= 3 ? 'text-yellow-600' : 'text-green-600'}">${daysRemaining} days</p>
+              </div>
+
+              <!-- Status Badge -->
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-1 rounded text-xs font-semibold ${badgeColor}">${rental.rentalStatus}</span>
+                ${rental.driverName ? `
+                  <span class="text-xs text-gray-600">Driver: ${rental.driverName}</span>
+                ` : `
+                  <span class="text-xs text-gray-600">No driver assigned</span>
+                `}
+              </div>
+
+              <!-- Revenue -->
+              <div class="pt-2 border-t">
+                <p class="text-xs text-gray-600">Total Revenue</p>
+                <p class="text-lg font-bold text-blue-600">${App.formatCurrency(rental.totalPrice)}</p>
+              </div>
+            </div>
+          </button>
+        `;
+      });
+
+      html += '</div>';
+      pageContent.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'Active Rentals';
+
+      renderRentals();
+    });
+  </script>
+</body>
+</html>

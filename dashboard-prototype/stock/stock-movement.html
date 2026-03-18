@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Movement - Tool Rental Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../js/dummy-data.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/layout.js"></script>
+</head>
+<body class="bg-gray-100">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'Stock Movement History';
+
+      const pageContent = document.getElementById('page-content');
+      if (!pageContent) return;
+
+      let html = `
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">Stock Movement History</h2>
+          <div class="flex gap-2">
+            <select id="movement-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">All Movements</option>
+              <option value="IN">IN</option>
+              <option value="OUT">OUT</option>
+              <option value="RENT">RENT</option>
+              <option value="RETURN">RETURN</option>
+              <option value="LOST">LOST</option>
+              <option value="DAMAGED">DAMAGED</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div id="movement-table"></div>
+        </div>
+      `;
+
+      pageContent.innerHTML = html;
+
+      const movementTypeColors = {
+        'IN': 'bg-green-100 text-green-800',
+        'OUT': 'bg-blue-100 text-blue-800',
+        'RENT': 'bg-yellow-100 text-yellow-800',
+        'RETURN': 'bg-purple-100 text-purple-800',
+        'LOST': 'bg-red-100 text-red-800',
+        'DAMAGED': 'bg-orange-100 text-orange-800',
+      };
+
+      const movementTypeIcons = {
+        'IN': '📥',
+        'OUT': '📤',
+        'RENT': '📦',
+        'RETURN': '↩️',
+        'LOST': '❌',
+        'DAMAGED': '⚠️',
+      };
+
+      function renderMovementTable(typeFilter = '') {
+        const filteredMovements = typeFilter
+          ? dummyData.stockMovement.filter(m => m.type === typeFilter)
+          : dummyData.stockMovement;
+
+        const tableContainer = document.getElementById('movement-table');
+        let html = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50 border-b border-gray-200"><tr>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Date</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Tool</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Warehouse</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Type</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Quantity</th>';
+        html += '<th class="px-6 py-3 text-left font-semibold text-gray-700">Reference</th>';
+        html += '</tr></thead><tbody>';
+
+        filteredMovements.forEach(movement => {
+          const typeColor = movementTypeColors[movement.type] || 'bg-gray-100 text-gray-800';
+          const icon = movementTypeIcons[movement.type] || '•';
+
+          html += `
+            <tr class="border-b hover:bg-gray-50 transition">
+              <td class="px-6 py-4">${App.formatDate(movement.date)}</td>
+              <td class="px-6 py-4 font-semibold">${movement.toolName}</td>
+              <td class="px-6 py-4">${movement.warehouseName}</td>
+              <td class="px-6 py-4">
+                <span class="px-3 py-1 text-xs font-semibold rounded ${typeColor} flex items-center gap-2 w-fit">
+                  <span>${icon}</span>
+                  <span>${movement.type}</span>
+                </span>
+              </td>
+              <td class="px-6 py-4">
+                <span class="font-semibold ${movement.type === 'OUT' || movement.type === 'RENT' || movement.type === 'LOST' || movement.type === 'DAMAGED' ? 'text-red-600' : 'text-green-600'}">
+                  ${movement.type === 'OUT' || movement.type === 'RENT' || movement.type === 'LOST' || movement.type === 'DAMAGED' ? '-' : '+'}${movement.quantity}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-gray-600">${movement.reference}</td>
+            </tr>
+          `;
+        });
+
+        html += '</tbody></table></div>';
+        tableContainer.innerHTML = html;
+      }
+
+      document.getElementById('movement-filter').addEventListener('change', (e) => {
+        renderMovementTable(e.target.value);
+      });
+
+      renderMovementTable();
+    });
+  </script>
+</body>
+</html>

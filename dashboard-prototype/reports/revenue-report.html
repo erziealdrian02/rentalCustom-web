@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revenue Report - Tool Rental Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="../js/dummy-data.js"></script>
+  <script src="../js/app.js"></script>
+  <script src="../js/charts.js"></script>
+  <script src="../js/layout.js"></script>
+</head>
+<body class="bg-gray-100">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'Revenue Report';
+
+      const pageContent = document.getElementById('page-content');
+      if (!pageContent) return;
+
+      const totalRevenue = dummyData.rentals.reduce((sum, r) => sum + r.totalPrice, 0);
+      const averageRevenue = (totalRevenue / dummyData.rentals.length).toFixed(2);
+
+      let html = `
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-900">Revenue Report</h2>
+          <div class="flex gap-2">
+            <input type="date" id="start-date" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="date" id="end-date" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="exportReport()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              Export
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Total Revenue</p>
+            <p class="text-3xl font-bold text-green-600 mt-2">${App.formatCurrency(totalRevenue)}</p>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Average Revenue/Rental</p>
+            <p class="text-3xl font-bold text-blue-600 mt-2">${App.formatCurrency(averageRevenue)}</p>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Total Transactions</p>
+            <p class="text-3xl font-bold text-purple-600 mt-2">${dummyData.rentals.length}</p>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Peak Month</p>
+            <p class="text-3xl font-bold text-orange-600 mt-2">Jun</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue Trend</h3>
+            <canvas id="revenueChart" height="300"></canvas>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Revenue by Tool</h3>
+            <canvas id="toolRevenueChart" height="300"></canvas>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Revenue by Customer</h3>
+            <div id="customer-revenue"></div>
+          </div>
+
+          <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Status Breakdown</h3>
+            <canvas id="statusChart" height="300"></canvas>
+          </div>
+        </div>
+      `;
+
+      pageContent.innerHTML = html;
+
+      const today = new Date();
+      const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+      document.getElementById('start-date').value = monthAgo.toISOString().split('T')[0];
+      document.getElementById('end-date').value = today.toISOString().split('T')[0];
+
+      function renderReportData() {
+        // Revenue Chart
+        const revenueData = ChartManager.createLineChartData(
+          dummyData.monthlyRevenue.map(d => d.month),
+          dummyData.monthlyRevenue.map(d => d.revenue),
+          'Revenue ($)'
+        );
+        ChartManager.initChart('revenueChart', 'line', revenueData, ChartManager.lineChartOptions());
+
+        // Revenue by Tool
+        const toolRevenue = {};
+        dummyData.rentals.forEach(rental => {
+          toolRevenue[rental.toolName] = (toolRevenue[rental.toolName] || 0) + rental.totalPrice;
+        });
+
+        const toolRevenueData = ChartManager.createBarChartData(
+          Object.keys(toolRevenue),
+          Object.values(toolRevenue),
+          'Revenue ($)'
+        );
+        ChartManager.initChart('toolRevenueChart', 'bar', toolRevenueData, ChartManager.barChartOptions());
+
+        // Revenue by Customer
+        const customerRevenue = {};
+        dummyData.rentals.forEach(rental => {
+          customerRevenue[rental.customerName] = (customerRevenue[rental.customerName] || 0) + rental.totalPrice;
+        });
+
+        let customerHtml = '<div class="space-y-3">';
+        Object.entries(customerRevenue)
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([customer, revenue]) => {
+            customerHtml += `
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span class="font-semibold text-gray-900">${customer}</span>
+                <span class="text-green-600 font-bold">${App.formatCurrency(revenue)}</span>
+              </div>
+            `;
+          });
+        customerHtml += '</div>';
+        document.getElementById('customer-revenue').innerHTML = customerHtml;
+
+        // Status Breakdown
+        const statusRevenue = {};
+        dummyData.rentals.forEach(rental => {
+          statusRevenue[rental.status] = (statusRevenue[rental.status] || 0) + rental.totalPrice;
+        });
+
+        const statusData = ChartManager.createPieChartData(
+          Object.keys(statusRevenue),
+          Object.values(statusRevenue)
+        );
+        ChartManager.initChart('statusChart', 'doughnut', statusData, ChartManager.pieChartOptions());
+      }
+
+      window.exportReport = function() {
+        alert('Export functionality would generate a PDF/CSV file with the current revenue data.');
+      };
+
+      setTimeout(renderReportData, 100);
+    });
+  </script>
+</body>
+</html>
