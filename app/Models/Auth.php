@@ -81,9 +81,9 @@ class User extends Authenticatable
     // {
     //     return $this->status === self::STATUS_ACTIVE;
     // }
-    public function isActive()
+    public function isActive(): bool
     {
-        return $this->status === 'active';
+        return $this->status === self::STATUS_ACTIVE;
     }
 
     /**
