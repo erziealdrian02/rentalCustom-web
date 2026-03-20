@@ -1,4 +1,3 @@
-{{-- resources/views/tools/index.blade.php --}}
 @extends('layout.app')
 
 @section('content')
@@ -44,8 +43,9 @@
                 </thead>
                 <tbody>
                     @forelse($tools as $tool)
+                    {{-- {{ dd($tools->first()) }} --}}
                         @php
-                            $status = ucfirst($tool['status']);
+                            $status = ucfirst($tool->status);
 
                             $statusColor = match ($status) {
                                 'Available' => 'bg-green-100 text-green-700',
@@ -56,14 +56,14 @@
                             };
                         @endphp
                         <tr class="border-b hover:bg-gray-50 transition">
-                            <td class="px-6 py-4">{{ $tool['code'] }}</td>
-                            <td class="px-6 py-4 font-semibold">{{ $tool['name'] }}</td>
+                            <td class="px-6 py-4">{{ $tool->code_tools }}</td>
+                            <td class="px-6 py-4 font-semibold">{{ $tool->name }}</td>
                             <td class="px-6 py-4">{{ $tool->category->name ?? '-' }}</td>
-                            <td class="px-6 py-4 text-gray-600">{{ $tool['serial_number'] }}</td>
-                            <td class="px-6 py-4">${{ number_format($tool['replacement_value']) }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ $tool->serial_number }}</td>
+                            <td class="px-6 py-4">${{ number_format($tool->replacement_value) }}</td>
                             <td class="px-6 py-4">
                                 <span class="px-2 py-1 text-xs font-semibold rounded {{ $statusColor }}">
-                                    {{ $status = ucfirst($tool['status']) }}
+                                    {{ $status = ucfirst($tool->status) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
@@ -230,7 +230,7 @@
 
             if (tool) {
                 // Mode Edit
-                title.textContent = 'Edit Tool';
+                title.textContent = `Edit Tool ${tool.code_tools}`;
                 form.action = `/master/tools/update/${tool.id_tools}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 

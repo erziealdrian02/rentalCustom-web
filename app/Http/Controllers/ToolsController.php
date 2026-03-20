@@ -24,30 +24,18 @@ class ToolsController extends Controller
     {
         $uuid = Str::uuid();
 
-        // 🔹 Ambil category
         $category = Categories::findOrFail($request->category);
-
-        // 🔹 Generate prefix dari nama category
         $words = explode(' ', strtoupper($category->name));
 
         if (count($words) > 1) {
-            // Ambil 2 huruf dari tiap kata
             $prefix = substr($words[0], 0, 2) . substr($words[1], 0, 2);
         } else {
-            // Ambil 4 huruf pertama
             $prefix = substr($words[0], 0, 4);
         }
 
-        // 🔹 Hitung jumlah tools dalam category tsb
         $count = Tools::where('category_id', $category->id)->count() + 1;
-
-        // 🔹 Format angka (001, 002, dst)
         $number = str_pad($count, 3, '0', STR_PAD_LEFT);
-
-        // 🔹 Final code
         $code = $prefix . '-' . $number;
-
-        // 🔹 Serial number
         $year = date('Y');
         $serialNumber = "SN-{$year}-{$code}";
 
