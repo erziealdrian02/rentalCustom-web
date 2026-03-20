@@ -2,157 +2,101 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Categories;
 use App\Models\Tools;
+use Illuminate\Support\Str;
+
 use Illuminate\Http\Request;
 
 class ToolsController extends Controller
 {
-    private function getTools()
+    public function masterTools(Request $request)
     {
-        return session('tools', [
-            [
-                'id' => 1,
-                'code' => 'DRILL001',
-                'name' => 'Power Drill',
-                'category' => 'Power Tools',
-                'serialNumber' => 'SN-2024-001',
-                'replacementValue' => 150,
-                'status' => 'Available',
-            ],
-            [
-                'id' => 2,
-                'code' => 'SAW002',
-                'name' => 'Circular Saw',
-                'category' => 'Power Tools',
-                'serialNumber' => 'SN-2024-002',
-                'replacementValue' => 200,
-                'status' => 'Rented',
-            ],
-            [
-                'id' => 3,
-                'code' => 'SAND003',
-                'name' => 'Orbital Sander',
-                'category' => 'Power Tools',
-                'serialNumber' => 'SN-2024-003',
-                'replacementValue' => 120,
-                'status' => 'Available',
-            ],
-            [
-                'id' => 4,
-                'code' => 'IMPACT004',
-                'name' => 'Impact Driver',
-                'category' => 'Power Tools',
-                'serialNumber' => 'SN-2024-004',
-                'replacementValue' => 180,
-                'status' => 'Damaged',
-            ],
-            [
-                'id' => 5,
-                'code' => 'LADDER005',
-                'name' => 'Extension Ladder',
-                'category' => 'Safety Equipment',
-                'serialNumber' => 'SN-2024-005',
-                'replacementValue' => 250,
-                'status' => 'Available',
-            ],
-            [
-                'id' => 6,
-                'code' => 'WRENCH006',
-                'name' => 'Socket Wrench Set',
-                'category' => 'Hand Tools',
-                'serialNumber' => 'SN-2024-006',
-                'replacementValue' => 95,
-                'status' => 'Rented',
-            ],
-            [
-                'id' => 7,
-                'code' => 'LEVEL007',
-                'name' => 'Digital Level',
-                'category' => 'Measurement Tools',
-                'serialNumber' => 'SN-2024-007',
-                'replacementValue' => 85,
-                'status' => 'Available',
-            ],
-            [
-                'id' => 8,
-                'code' => 'GRINDER008',
-                'name' => 'Angle Grinder',
-                'category' => 'Power Tools',
-                'serialNumber' => 'SN-2024-008',
-                'replacementValue' => 220,
-                'status' => 'Lost',
-            ],
-        ]);
+        $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
+
+        $tools = Tools::with('category')->paginate($perPage);
+        $categories = Categories::get();
+
+        return view('master.tools', compact('tools', 'categories'));
     }
 
-    public function masterTools()
+    public function masterToolsStore(Request $request)
     {
-        $tools = $this->getTools();
+        $uuid = Str::uuid();
 
-        return view('master.tools', compact('tools'));
-    }
+        // 🔹 Ambil category
+        $category = Categories::findOrFail($request->category);
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'code'             => 'required|string|max:50',
-            'name'             => 'required|string|max:100',
-            'category'         => 'required|string',
-            'serialNumber'     => 'required|string|max:100',
-            'replacementValue' => 'required|numeric|min:0',
-            'status'           => 'required|string',
-        ]);
- 
-        $tools   = $this->getTools();
-        $maxId   = count($tools) ? max(array_column($tools, 'id')) : 0;
-        $tools[] = [
-            'id'               => $maxId + 1,
-            'code'             => $request->code,
-            'name'             => $request->name,
-            'category'         => $request->category,
-            'serialNumber'     => $request->serialNumber,
-            'replacementValue' => (int) $request->replacementValue,
-            'status'           => $request->status,
-        ];
-        session(['tools' => $tools]);
- 
-        return redirect()->route('tools.index')->with('success', 'Tool added successfully!');
-    }
- 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'code'             => 'required|string|max:50',
-            'name'             => 'required|string|max:100',
-            'category'         => 'required|string',
-            'serialNumber'     => 'required|string|max:100',
-            'replacementValue' => 'required|numeric|min:0',
-            'status'           => 'required|string',
-        ]);
- 
-        $tools = $this->getTools();
-        foreach ($tools as &$tool) {
-            if ($tool['id'] == $id) {
-                $tool['code']             = $request->code;
-                $tool['name']             = $request->name;
-                $tool['category']         = $request->category;
-                $tool['serialNumber']     = $request->serialNumber;
-                $tool['replacementValue'] = (int) $request->replacementValue;
-                $tool['status']           = $request->status;
-                break;
-            }
+        // 🔹 Generate prefix dari nama category
+        $words = explode(' ', strtoupper($category->name));
+
+        if (count($words) > 1) {
+            // Ambil 2 huruf dari tiap kata
+            $prefix = substr($words[0], 0, 2) . substr($words[1], 0, 2);
+        } else {
+            // Ambil 4 huruf pertama
+            $prefix = substr($words[0], 0, 4);
         }
-        session(['tools' => $tools]);
- 
-        return redirect()->route('tools.index')->with('success', 'Tool updated successfully!');
+
+        // 🔹 Hitung jumlah tools dalam category tsb
+        $count = Tools::where('category_id', $category->id)->count() + 1;
+
+        // 🔹 Format angka (001, 002, dst)
+        $number = str_pad($count, 3, '0', STR_PAD_LEFT);
+
+        // 🔹 Final code
+        $code = $prefix . '-' . $number;
+
+        // 🔹 Serial number
+        $year = date('Y');
+        $serialNumber = "SN-{$year}-{$code}";
+
+        // 🔹 Simpan data
+        $model = new Tools();
+        $model->id_tools = $uuid;
+        $model->code = $code;
+        $model->name = $request->name;
+        $model->category_id = $category->id;
+        $model->serial_number = $serialNumber;
+        $model->replacement_value = (int) $request->replacementValue;
+        $model->status = strtolower($request->status);
+
+        $model->save();
+
+        return redirect()->route('master.tools')->with('success', 'Tool added successfully!');
     }
- 
-    public function destroy($id)
+
+    public function masterToolsUpdate(Request $request, $id_tools)
     {
-        $tools = $this->getTools();
-        $tools = array_values(array_filter($tools, fn($t) => $t['id'] != $id));
+        $request->validate([
+            'name' => 'required|string|max:100',
+            'category' => 'required|exists:tool_categories,id',
+            'replacementValue' => 'required|numeric|min:0',
+            'status' => 'required|string',
+        ]);
+
+        $model = Tools::findOrFail($id_tools);
+
+        $model->name = $request->name;
+        $model->category_id = $request->category;
+        $model->replacement_value = (int) $request->replacementValue;
+        $model->status = strtolower($request->status);
+
+        $model->save();
+
+        return redirect()->route('master.tools')->with('success', 'Tool updated successfully!');
+    }
+
+    public function masterToolsDestroy($id_tools)
+    {
+        $tools = Tools::all();
+        $tools = $tools
+            ->filter(function ($tool) use ($id_tools) {
+                return $tool->id_tools != $id_tools;
+            })
+            ->values();
         session(['tools' => $tools]);
- 
-        return redirect()->route('tools.index')->with('success', 'Tool deleted successfully!');
+
+        return redirect()->route('master.tools')->with('success', 'Tool deleted successfully!');
     }
 }

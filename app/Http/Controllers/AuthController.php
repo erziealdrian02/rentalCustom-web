@@ -73,16 +73,16 @@ class AuthController extends Controller
         // 4. Cek status akun (harus 'active')
         $user = Auth::user();
 
-        if (!$user->isActive()) {
-            Auth::logout();
-            return back()->withErrors([
-                'email' => match ($user->status) {
-                    'inactive' => 'Akun Anda belum diaktifkan. Hubungi administrator.',
-                    'banned'   => 'Akun Anda telah diblokir. Hubungi administrator.',
-                    default    => 'Akun Anda tidak dapat login saat ini.',
-                },
-            ])->withInput($request->only('email'));
-        }
+        // if (!$user->isActive()) {
+        //     Auth::logout();
+        //     return back()->withErrors([
+        //         'email' => match ($user->status) {
+        //             'inactive' => 'Akun Anda belum diaktifkan. Hubungi administrator.',
+        //             'banned'   => 'Akun Anda telah diblokir. Hubungi administrator.',
+        //             default    => 'Akun Anda tidak dapat login saat ini.',
+        //         },
+        //     ])->withInput($request->only('email'));
+        // }
 
         // 5. Login berhasil
         RateLimiter::clear($throttleKey);
@@ -219,7 +219,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
         ]);
 
-        $user->update([
+        User::update([
             'name'  => $request->name,
             'email' => $request->email,
         ]);
@@ -243,7 +243,7 @@ class AuthController extends Controller
             return back()->withErrors(['current_password' => 'Password lama tidak sesuai.']);
         }
 
-        $user->update(['password' => Hash::make($request->password)]);
+        User::update(['password' => Hash::make($request->password)]);
 
         return back()->with('success', 'Password berhasil diubah.');
     }

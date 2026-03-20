@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/master/tools', [ToolsController::class, 'masterTools'])->name('master.tools');
     Route::post('/master/tools/post', [ToolsController::class, 'masterToolsStore'])->name('tools.store');
+    Route::put('/master/tools/update/{id_tools}', [ToolsController::class, 'masterToolsUpdate'])->name('tools.update');
+    Route::delete('/master/tools/delete/{id_tools}', [ToolsController::class, 'masterToolsDestroy'])->name('tools.destroy');
 
     Route::get('/master/categories', [CategoriesController::class, 'masterCategories'])->name('master.categories');
     Route::post('/master/categories/post', [CategoriesController::class, 'masterCategoriesStore'])->name('categories.store');

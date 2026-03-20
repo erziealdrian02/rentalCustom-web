@@ -45,7 +45,9 @@
                 <tbody>
                     @forelse($tools as $tool)
                         @php
-                            $statusColor = match ($tool['status']) {
+                            $status = ucfirst($tool['status']);
+
+                            $statusColor = match ($status) {
                                 'Available' => 'bg-green-100 text-green-700',
                                 'Rented' => 'bg-blue-100 text-blue-700',
                                 'Damaged' => 'bg-yellow-100 text-yellow-700',
@@ -56,12 +58,12 @@
                         <tr class="border-b hover:bg-gray-50 transition">
                             <td class="px-6 py-4">{{ $tool['code'] }}</td>
                             <td class="px-6 py-4 font-semibold">{{ $tool['name'] }}</td>
-                            <td class="px-6 py-4">{{ $tool['category'] }}</td>
-                            <td class="px-6 py-4 text-gray-600">{{ $tool['serialNumber'] }}</td>
-                            <td class="px-6 py-4">${{ number_format($tool['replacementValue']) }}</td>
+                            <td class="px-6 py-4">{{ $tool->category->name ?? '-' }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ $tool['serial_number'] }}</td>
+                            <td class="px-6 py-4">${{ number_format($tool['replacement_value']) }}</td>
                             <td class="px-6 py-4">
                                 <span class="px-2 py-1 text-xs font-semibold rounded {{ $statusColor }}">
-                                    {{ $tool['status'] }}
+                                    {{ $status = ucfirst($tool['status']) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
@@ -73,15 +75,15 @@
                                     </button>
 
                                     {{-- Tombol Delete --}}
-                                    {{-- <form method="POST" action="{{ route('tools.destroy', $tool['id']) }}"
+                                    <form method="POST" action="{{ route('tools.destroy', $tool['id_tools']) }}"
                                         onsubmit="return confirm('Yakin ingin menghapus tool ini?')">
                                         @csrf
-                                        @method('DELETE') --}}
+                                        @method('DELETE')
                                         <button type="submit"
                                             class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">
                                             Delete
                                         </button>
-                                    {{-- </form> --}}
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -92,6 +94,62 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+        {{-- Footer Tabel: Per Page + Pagination --}}
+        <div
+            class="px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-200 bg-white">
+
+            {{-- Kiri: Per Page Selector + Info --}}
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span>Show</span>
+                <form method="GET" action="{{ route('master.tools') }}" id="per-page-form">
+                    <select name="per_page" onchange="document.getElementById('per-page-form').submit()"
+                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        @foreach ([10, 50, 100] as $size)
+                            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                                {{ $size }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+                <span>entries</span>
+                <span class="text-gray-400">
+                    &mdash; Showing {{ $tools->firstItem() }}-{{ $tools->lastItem() }} of {{ $tools->total() }}
+                </span>
+            </div>
+
+            {{-- Kanan: Pagination custom (tanpa teks "Showing X to Y") --}}
+            <div class="flex items-center gap-1">
+                {{-- Prev --}}
+                @if ($tools->onFirstPage())
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">‹</span>
+                @else
+                    <a href="{{ $tools->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">‹</a>
+                @endif
+
+                {{-- Page Numbers --}}
+                @foreach ($tools->getUrlRange(1, $tools->lastPage()) as $page => $url)
+                    @if ($page == $tools->currentPage())
+                        <span
+                            class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white font-semibold">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}&per_page={{ request('per_page', 10) }}"
+                            class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">{{ $page }}</a>
+                    @endif
+                @endforeach
+
+                {{-- Next --}}
+                @if ($tools->hasMorePages())
+                    <a href="{{ $tools->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">›</a>
+                @else
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">›</span>
+                @endif
+            </div>
+
         </div>
     </div>
 
@@ -109,17 +167,11 @@
             </div>
 
             {{-- Form dinamis: POST untuk add, PUT untuk edit --}}
-            {{-- <form id="tool-form" method="POST" action="{{ route('tools.store') }}" class="space-y-4">
+            <form id="tool-form" method="POST" action="{{ route('tools.store') }}" class="space-y-4">
                 @csrf
                 <span id="method-field"></span>
 
-                <input type="hidden" id="tool-id" name="tool_id" value="">
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Tool Code</label>
-                    <input type="text" name="code" id="f-code" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
+                <input type="" id="tool-id" name="tool_id" value="">
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tool Name</label>
@@ -131,18 +183,12 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
                     <select name="category" id="f-category" required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option>Power Tools</option>
-                        <option>Hand Tools</option>
-                        <option>Safety Equipment</option>
-                        <option>Measurement Tools</option>
-                        <option>Cleaning Equipment</option>
+                        @forelse($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @empty
+                            <option>No categories found</option>
+                        @endforelse
                     </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Serial Number</label>
-                    <input type="text" name="serialNumber" id="f-serialNumber" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div>
@@ -166,7 +212,7 @@
                     class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
                     Save Tool
                 </button>
-            </form> --}}
+            </form>
         </div>
     </div>
 
@@ -185,17 +231,15 @@
             if (tool) {
                 // Mode Edit
                 title.textContent = 'Edit Tool';
-                form.action = `/tools/${tool.id}`;
+                form.action = `/master/tools/update/${tool.id_tools}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
-                document.getElementById('tool-id').value = tool.id;
-                document.getElementById('f-code').value = tool.code;
+                document.getElementById('tool-id').value = tool.id_tools;
                 document.getElementById('f-name').value = tool.name;
-                document.getElementById('f-serialNumber').value = tool.serialNumber;
-                document.getElementById('f-replacementValue').value = tool.replacementValue;
+                document.getElementById('f-replacementValue').value = tool.replacement_value;
 
                 // Set select values
-                setSelect('f-category', tool.category);
+                setSelect('f-category', tool.category_id);
                 setSelect('f-status', tool.status);
             } else {
                 // Mode Add
