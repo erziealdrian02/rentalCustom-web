@@ -52,15 +52,15 @@
                                     </button>
 
                                     {{-- Tombol Delete --}}
-                                    {{-- <form method="POST" action="{{ route('categories.destroy', $cat['id']) }}"
+                                    <form method="POST" action="{{ route('categories.destroy', $cat['id']) }}"
                                         onsubmit="return confirm('Yakin ingin menghapus kategori ini?')">
                                         @csrf
-                                        @method('DELETE') --}}
+                                        @method('DELETE')
                                         <button type="submit"
                                             class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">
                                             Delete
                                         </button>
-                                    {{-- </form> --}}
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -71,6 +71,61 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+        <div
+            class="px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-200 bg-white">
+
+            {{-- Kiri: Per Page Selector + Info --}}
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span>Show</span>
+                <form method="GET" action="{{ route('master.categories') }}" id="per-page-form">
+                    <select name="per_page" onchange="document.getElementById('per-page-form').submit()"
+                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        @foreach ([10, 50, 100] as $size)
+                            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                                {{ $size }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+                <span>entries</span>
+                <span class="text-gray-400">
+                    &mdash; Showing {{ $categories->firstItem() }}-{{ $categories->lastItem() }} of {{ $categories->total() }}
+                </span>
+            </div>
+
+            {{-- Kanan: Pagination custom (tanpa teks "Showing X to Y") --}}
+            <div class="flex items-center gap-1">
+                {{-- Prev --}}
+                @if ($categories->onFirstPage())
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">‹</span>
+                @else
+                    <a href="{{ $categories->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">‹</a>
+                @endif
+
+                {{-- Page Numbers --}}
+                @foreach ($categories->getUrlRange(1, $categories->lastPage()) as $page => $url)
+                    @if ($page == $categories->currentPage())
+                        <span
+                            class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white font-semibold">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}&per_page={{ request('per_page', 10) }}"
+                            class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">{{ $page }}</a>
+                    @endif
+                @endforeach
+
+                {{-- Next --}}
+                @if ($categories->hasMorePages())
+                    <a href="{{ $categories->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">›</a>
+                @else
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">›</span>
+                @endif
+            </div>
+
         </div>
     </div>
 
@@ -87,8 +142,8 @@
                 </button>
             </div>
 
-            {{-- <form id="category-form" method="POST" action="{{ route('categories.store') }}" class="space-y-4">
-                @csrf --}}
+            <form id="category-form" method="POST" action="{{ route('categories.store') }}" class="space-y-4">
+                @csrf
                 <span id="method-field"></span>
 
                 <div>
@@ -107,7 +162,7 @@
                     class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
                     Save Category
                 </button>
-            {{-- </form> --}}
+            </form>
         </div>
     </div>
 

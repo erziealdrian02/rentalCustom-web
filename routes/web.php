@@ -58,6 +58,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/master/categories', [CategoriesController::class, 'masterCategories'])->name('master.categories');
     Route::post('/master/categories/post', [CategoriesController::class, 'masterCategoriesStore'])->name('categories.store');
+    Route::put('/master/categories/update/{id}', [CategoriesController::class, 'masterCategoriesUpdate'])->name('categories.update');
+    Route::delete('/master/categories/delete/{id}', [CategoriesController::class, 'masterCategoriesDestroy'])->name('categories.destroy');
 
     Route::get('/master/warehouses', [WarehouseController::class, 'masterWarehouses'])->name('master.warehouses');
     Route::post('/master/warehouses/post', [WarehouseController::class, 'masterWarehousesStore'])->name('warehouses.store');
