@@ -9,8 +9,6 @@ class WarehouseController extends Controller
 {
     public function masterWarehouses(Request $request)
     {
-        // $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
-
         $warehouses = Warehouse::get();
 
         $grouped = [];
@@ -37,9 +35,6 @@ class WarehouseController extends Controller
             $regionCode .= strtoupper(substr($word, 0, 1));
         }
 
-        // contoh: Jawa Barat → JB
-
-        // 🔤 LOCATION CODE (ambil 3 huruf dari tiap kata / combine)
         $locationWords = explode(' ', $request->location);
         $locationCode = '';
 
@@ -47,24 +42,15 @@ class WarehouseController extends Controller
             $locationCode .= strtoupper(substr($word, 0, 1));
         }
 
-        // kalau hasilnya < 3 huruf, tambahin dari string aslinya
         if (strlen($locationCode) < 3) {
             $locationCode = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $request->location), 0, 3));
         }
 
-        // contoh:
-        // Bekasi Barat → BB → jadi fallback → BKB
-        // Lowokwaru → L → jadi LOW
-
-        // 🔢 Hitung urutan berdasarkan region + location
         $count = Warehouse::where('region', $request->region)->where('location', $request->location)->count();
 
         $number = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
 
-        // 🧾 Final Code
         $model->code = "{$regionCode}-{$locationCode}-{$number}";
-
-        // dd($model);
 
         $model->save();
 
