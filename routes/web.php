@@ -77,6 +77,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/master/users', [UsersController::class, 'masterUsers'])->name('master.users');
     Route::post('/master/users/post', [UsersController::class, 'masterUsersStore'])->name('users.store');
+    Route::put('/master/users/update/{id}', [UsersController::class, 'masterUsersUpdate'])->name('users.update');
+    Route::put('/master/users/reset/{id}', [UsersController::class, 'masterUsersReset'])->name('users.reset');
+    Route::delete('/master/users/delete/{id}', [UsersController::class, 'masterUsersDestroy'])->name('users.destroy');
+
 
     Route::get('/stock/overview', [StockController::class, 'overview'])->name('stock.overview');
     Route::get('/stock/movement', [StockController::class, 'movement'])->name('stock.movement');

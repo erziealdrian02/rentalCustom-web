@@ -14,6 +14,11 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected $table = 'users';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -41,13 +46,24 @@ class User extends Authenticatable
         ];
     }
 
+    // protected static function boot()
+    // {
+    //     parent::boot();
+
+    //     static::creating(function ($model) {
+    //         if (!$model->id) {
+    //             $model->id = (string) Str::uuid();
+    //         }
+    //     });
+    // }
+
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($model) {
-            if (!$model->id) {
-                $model->id = (string) Str::uuid();
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) \Illuminate\Support\Str::uuid();
             }
         });
     }

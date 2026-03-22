@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class UsersController extends Controller
@@ -11,65 +12,60 @@ class UsersController extends Controller
         return session('system_users', [['id' => 1, 'name' => 'Admin Utama', 'email' => 'admin@example.com', 'role' => 'Administrator', 'status' => 'Active'], ['id' => 2, 'name' => 'Budi Santoso', 'email' => 'budi@example.com', 'role' => 'Warehouse Manager', 'status' => 'Active'], ['id' => 3, 'name' => 'Citra Dewi', 'email' => 'citra@example.com', 'role' => 'Staff', 'status' => 'Active'], ['id' => 4, 'name' => 'Dodi Pratama', 'email' => 'dodi@example.com', 'role' => 'Clerk', 'status' => 'Inactive']]);
     }
 
-    public function masterUsers()
+    public function masterUsers(Request $request)
     {
-        $users = $this->getUsers();
+        $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
+
+        $users = User::paginate($perPage);
+
         return view('master.users', compact('users'));
     }
 
-    public function store(Request $request)
+    public function masterUsersStore(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|max:150',
-            'role' => 'required|in:Administrator,Warehouse Manager,Staff,Clerk',
-            'status' => 'required|in:Active,Inactive',
-        ]);
+        $model = new User();
+        $model->name = $request->name;
+        $model->email = $request->email;
+        $model->full_name = $request->fullname;
+        $model->phone = $request->phone;
+        $model->password = bcrypt('12345678');
+        $model->role = strtolower($request->role);
+        $model->status = strtolower($request->status);
 
-        $users = $this->getUsers();
-        $maxId = count($users) ? max(array_column($users, 'id')) : 0;
-        $users[] = [
-            'id' => $maxId + 1,
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role,
-            'status' => $request->status,
-        ];
-        session(['system_users' => $users]);
+        $model->save();
 
-        return redirect()->route('users.index')->with('success', 'User added successfully!');
+        return redirect()->route('master.users')->with('success', 'User added successfully!');
     }
 
-    public function update(Request $request, $id)
+    public function masterUsersUpdate(Request $request, $id)
     {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|max:150',
-            'role' => 'required|in:Administrator,Warehouse Manager,Staff,Clerk',
-            'status' => 'required|in:Active,Inactive',
-        ]);
+        $model = User::findOrFail($id);
+        $model->name = $request->name;
+        $model->email = $request->email;
+        $model->full_name = $request->fullname;
+        $model->phone = $request->phone;
+        $model->role = strtolower($request->role);
+        $model->status = strtolower($request->status);
 
-        $users = $this->getUsers();
-        foreach ($users as &$user) {
-            if ($user['id'] == $id) {
-                $user['name'] = $request->name;
-                $user['email'] = $request->email;
-                $user['role'] = $request->role;
-                $user['status'] = $request->status;
-                break;
-            }
-        }
-        session(['system_users' => $users]);
+        $model->save();
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully!');
+        return redirect()->route('master.users')->with('success', 'User updated successfully!');
     }
 
-    public function destroy($id)
+    public function masterUsersReset($id)
     {
-        $users = $this->getUsers();
-        $users = array_values(array_filter($users, fn($u) => $u['id'] != $id));
-        session(['system_users' => $users]);
+        $model = User::findOrFail($id);
+        $model->password = bcrypt('12345678');
+        $model->save();
 
-        return redirect()->route('users.index')->with('success', 'User deleted successfully!');
+        return redirect()->route('master.users')->with('success', 'User password reset successfully!');
+    }
+
+    public function masterUsersDestroy($id)
+    {
+        $model = User::findOrFail($id);
+        $model->delete();
+
+        return redirect()->route('master.users')->with('success', 'User deleted successfully!');
     }
 }
