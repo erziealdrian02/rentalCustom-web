@@ -81,8 +81,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/master/users/reset/{id}', [UsersController::class, 'masterUsersReset'])->name('users.reset');
     Route::delete('/master/users/delete/{id}', [UsersController::class, 'masterUsersDestroy'])->name('users.destroy');
 
-
     Route::get('/stock/overview', [StockController::class, 'overview'])->name('stock.overview');
+    Route::get('/stock/restock/form', [StockController::class, 'restockForm'])->name('stock.restock.form');
+    Route::post('/stock/restock/store', [StockController::class, 'restockStore'])->name('stock.restock.store');
     Route::get('/stock/movement', [StockController::class, 'movement'])->name('stock.movement');
 
     Route::get('/transactions/rentals', [RentalsController::class, 'rental'])->name('transactions.rentals');

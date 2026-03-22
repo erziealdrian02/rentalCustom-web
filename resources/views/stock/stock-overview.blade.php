@@ -6,6 +6,11 @@
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-semibold text-gray-900">Warehouse Stock Overview</h2>
 
+        <a href="{{ route('stock.restock.form') }}"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
+            Restock Tools
+        </a>
+
         {{-- Filter dropdown — submit otomatis saat berubah --}}
         <form method="GET" action="{{ route('stock.overview') }}" id="filter-form">
             <select name="warehouse" onchange="document.getElementById('filter-form').submit()"
