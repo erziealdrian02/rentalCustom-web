@@ -30,6 +30,17 @@ class CategoriesController extends Controller
         return redirect()->route('master.categories')->with('success', 'Category added successfully!');
     }
 
+    public function masterCategoriesUpdate(Request $request, $id)
+    {
+        $category = Categories::findOrFail($id);
+        $category->name = $request->name;
+        $category->description = $request->description;
+
+        $category->save();
+
+        return redirect()->route('master.categories')->with('success', 'Category updated successfully!');
+    }
+
     public function masterCategoriesDestroy($id)
     {
         $category = Categories::findOrFail($id);

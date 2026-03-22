@@ -180,7 +180,7 @@
             if (cat) {
                 // Mode Edit
                 title.textContent = 'Edit Category';
-                form.action = `/categories/${cat.id}`;
+                form.action = `/master/categories/update/${cat.id}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 document.getElementById('f-name').value = cat.name;

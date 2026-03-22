@@ -140,8 +140,8 @@
             </button>
         </div>
 
-        {{-- <form id="warehouse-form" method="POST" action="{{ route('warehouses.store') }}" class="space-y-4">
-            @csrf --}}
+        <form id="warehouse-form" method="POST" action="{{ route('warehouses.store') }}" class="space-y-4">
+            @csrf
             <span id="method-field"></span>
 
             <div>
