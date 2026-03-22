@@ -9,4 +9,12 @@ class Pricing extends Model
 {
     /** @use HasFactory<\Database\Factories\PricingFactory> */
     use HasFactory;
+
+    protected $table = 'rental_pricing';
+
+    protected $primaryKey = 'id'; 
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
 }

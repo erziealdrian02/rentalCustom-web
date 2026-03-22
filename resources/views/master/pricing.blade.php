@@ -34,6 +34,7 @@
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Code Tools</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Tool Name</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Daily Rate</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Weekly Rate</th>
@@ -42,30 +43,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($pricing as $price)
+                    @forelse($tools as $tool)
                         <tr class="border-b hover:bg-gray-50 transition">
-                            <td class="px-6 py-4 font-semibold">{{ $price['toolName'] }}</td>
-                            <td class="px-6 py-4">${{ number_format($price['dailyRate'], 2) }}</td>
-                            <td class="px-6 py-4">${{ number_format($price['weeklyRate'], 2) }}</td>
-                            <td class="px-6 py-4">${{ number_format($price['monthlyRate'], 2) }}</td>
+                            <td class="px-6 py-4 font-semibold">{{ $tool['code_tools'] }}</td>
+                            <td class="px-6 py-4 font-semibold">{{ $tool['name'] }}</td>
+                            <td class="px-6 py-4">Rp.{{ number_format($tool['daily_rate']) }}</td>
+                            <td class="px-6 py-4">Rp.{{ number_format($tool['weekly_rate']) }}</td>
+                            <td class="px-6 py-4">Rp.{{ number_format($tool['monthly_rate']) }}</td>
                             <td class="px-6 py-4">
                                 <div class="flex gap-2">
                                     {{-- Tombol Edit --}}
-                                    <button onclick="openModal({{ json_encode($price) }})"
+                                    <button onclick="openModal({{ json_encode($tool) }})"
                                         class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">
                                         Edit
                                     </button>
-
-                                    {{-- Tombol Delete --}}
-                                    {{-- <form method="POST" action="{{ route('pricing.destroy', $price['id']) }}"
-                                        onsubmit="return confirm('Yakin ingin menghapus pricing ini?')">
-                                        @csrf
-                                        @method('DELETE') --}}
-                                        <button type="submit"
-                                            class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">
-                                            Delete
-                                        </button>
-                                    {{-- </form> --}}
                                 </div>
                             </td>
                         </tr>
@@ -102,28 +93,24 @@
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select Tool</option>
                         @foreach ($tools as $tool)
-                            <option value="{{ $tool['id'] }}">{{ $tool['name'] }}</option>
+                            {{-- gunakan id_tools bukan id --}}
+                            <option value="{{ $tool->id_tools }}">{{ $tool->name }}</option>
                         @endforeach
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Daily Rate ($)</label>
-                    <input type="number" name="dailyRate" id="f-dailyRate" step="0.01" min="0" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Weekly Rate ($)</label>
-                    <input type="number" name="weeklyRate" id="f-weeklyRate" step="0.01" min="0" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Rate ($)</label>
-                    <input type="number" name="monthlyRate" id="f-monthlyRate" step="0.01" min="0" required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
+                @foreach ([['label' => 'Daily Rate', 'name' => 'daily_rate'], ['label' => 'Weekly Rate', 'name' => 'weekly_rate'], ['label' => 'Monthly Rate', 'name' => 'monthly_rate']] as $rate)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ $rate['label'] }} (Rp.)</label>
+                        <div class="relative">
+                            <span
+                                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">Rp.</span>
+                            <input type="text" id="f-{{ $rate['name'] }}_display" placeholder="0"
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <input type="hidden" name="{{ $rate['name'] }}" id="f-{{ $rate['name'] }}">
+                    </div>
+                @endforeach
 
                 <button type="submit"
                     class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold">
@@ -131,9 +118,68 @@
                 </button>
             </form>
         </div>
+    </div> {{-- ← tutup modal di sini --}}
+
+    {{-- Footer Tabel: Per Page + Pagination (di luar modal) --}}
+    <div class="px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-200 bg-white">
+
+        <div class="flex items-center gap-2 text-sm text-gray-600">
+            <span>Show</span>
+            <form method="GET" action="{{ route('master.pricing') }}" id="per-page-form">
+                <select name="per_page" onchange="document.getElementById('per-page-form').submit()"
+                    class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                    @foreach ([10, 50, 100] as $size)
+                        <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                            {{ $size }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+            <span>entries</span>
+            <span class="text-gray-400">
+                &mdash; Showing {{ $tools->firstItem() }}-{{ $tools->lastItem() }} of {{ $tools->total() }}
+            </span>
+        </div>
+
+        <div class="flex items-center gap-1">
+            @if ($tools->onFirstPage())
+                <span
+                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">‹</span>
+            @else
+                <a href="{{ $tools->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">‹</a>
+            @endif
+
+            @foreach ($tools->getUrlRange(1, $tools->lastPage()) as $page => $url)
+                @if ($page == $tools->currentPage())
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white font-semibold">{{ $page }}</span>
+                @else
+                    <a href="{{ $url }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">{{ $page }}</a>
+                @endif
+            @endforeach
+
+            @if ($tools->hasMorePages())
+                <a href="{{ $tools->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">›</a>
+            @else
+                <span
+                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">›</span>
+            @endif
+        </div>
     </div>
 
     <script>
+        // Format input rate
+        ['daily_rate', 'weekly_rate', 'monthly_rate'].forEach(function(field) {
+            document.getElementById('f-' + field + '_display').addEventListener('input', function() {
+                let raw = this.value.replace(/\D/g, '');
+                this.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                document.getElementById('f-' + field).value = raw;
+            });
+        });
+
         function openModal(price = null) {
             const modal = document.getElementById('pricing-modal');
             const form = document.getElementById('pricing-form');
@@ -144,19 +190,28 @@
             methodEl.innerHTML = '';
 
             if (price) {
-                title.textContent = 'Edit Pricing';
-                form.action = `/pricing/${price.id}`;
+                title.textContent = `Edit Pricing ${price.code_tools}`;
+                form.action = `/master/pricing/update/${price.id}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 // Set select tool
                 const sel = document.getElementById('f-toolId');
                 for (let opt of sel.options) {
-                    opt.selected = parseInt(opt.value) === price.toolId;
+                    opt.selected = opt.value === price.id_tools
                 }
 
-                document.getElementById('f-dailyRate').value = price.dailyRate;
-                document.getElementById('f-weeklyRate').value = price.weeklyRate;
-                document.getElementById('f-monthlyRate').value = price.monthlyRate;
+                ['daily_rate', 'weekly_rate', 'monthly_rate'].forEach(function(field) {
+                    document.getElementById('f-' + field + '_display').value = '';
+                    document.getElementById('f-' + field).value = '';
+                });
+
+                ['daily_rate', 'weekly_rate', 'monthly_rate'].forEach(function(field) {
+                    if (price[field] !== undefined) {
+                        const formatted = Number(price[field]).toLocaleString('id-ID');
+                        document.getElementById('f-' + field + '_display').value = formatted;
+                        document.getElementById('f-' + field).value = price[field];
+                    }
+                });
             } else {
                 title.textContent = 'Add Pricing';
                 form.action = "{{ route('pricing.store') }}";

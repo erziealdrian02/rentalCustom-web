@@ -73,6 +73,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/master/pricing', [PricingController::class, 'masterPricing'])->name('master.pricing');
     Route::post('/master/pricing/post', [PricingController::class, 'masterPricingStore'])->name('pricing.store');
+    Route::put('/master/pricing/update/{id}', [PricingController::class, 'masterPricingUpdate'])->name('pricing.update');
+    Route::delete('/master/pricing/delete/{id}', [PricingController::class, 'masterPricingDestroy'])->name('pricing.destroy');
 
     Route::get('/master/users', [UsersController::class, 'masterUsers'])->name('master.users');
     Route::post('/master/users/post', [UsersController::class, 'masterUsersStore'])->name('users.store');

@@ -2,26 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Categories;
+use App\Models\Tools;
 use Illuminate\Http\Request;
 
 class PricingController extends Controller
 {
-    private function getPricing()
+    public function masterPricing(Request $request)
     {
-        return session('pricing', [['id' => 1, 'toolId' => 1, 'toolName' => 'Angle Grinder', 'dailyRate' => 25.0, 'weeklyRate' => 150.0, 'monthlyRate' => 500.0], ['id' => 2, 'toolId' => 2, 'toolName' => 'Hammer', 'dailyRate' => 5.0, 'weeklyRate' => 30.0, 'monthlyRate' => 100.0], ['id' => 3, 'toolId' => 3, 'toolName' => 'Safety Helmet', 'dailyRate' => 3.0, 'weeklyRate' => 18.0, 'monthlyRate' => 60.0]]);
-    }
+        $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
 
-    private function getTools()
-    {
-        // Ambil dari session tools supaya sinkron dengan halaman Tools
-        return session('tools', [['id' => 1, 'name' => 'Angle Grinder'], ['id' => 2, 'name' => 'Hammer'], ['id' => 3, 'name' => 'Safety Helmet']]);
-    }
+        $tools = Tools::with('category')->paginate($perPage);
+        $categories = Categories::get();
 
-    public function masterPricing()
-    {
-        $pricing = $this->getPricing();
-        $tools = $this->getTools();
-        return view('master.pricing', compact('pricing', 'tools'));
+        return view('master.pricing', compact('tools'));
     }
 
     public function masterPricingStore(Request $request)

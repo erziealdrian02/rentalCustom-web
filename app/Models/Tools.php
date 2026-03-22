@@ -11,11 +11,8 @@ class Tools extends Model
     use HasFactory;
 
     protected $table = 'tools';
-
-    protected $primaryKey = 'id_tools'; // 🔥 wajib
-
-    public $incrementing = false; // karena UUID
-
+    protected $primaryKey = 'id_tools';
+    public $incrementing = false;
     protected $keyType = 'string';
 
     public function category()
