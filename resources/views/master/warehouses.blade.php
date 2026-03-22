@@ -58,7 +58,7 @@
                     @php
                         $utilization =
                             $warehouse['capacity'] > 0
-                                ? round(($warehouse['currentStock'] / $warehouse['capacity']) * 100)
+                                ? round(($warehouse['used_stock'] / $warehouse['capacity']) * 100)
                                 : 0;
                         $utilizationColor =
                             $utilization > 80
@@ -66,12 +66,12 @@
                                 : ($utilization > 60
                                     ? 'text-yellow-600'
                                     : 'text-green-600');
-                        $available = $warehouse['capacity'] - $warehouse['currentStock'];
+                        $available = $warehouse['capacity'] - $warehouse['used_stock'];
                     @endphp
                     <div class="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition">
                         <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
                             <h4 class="font-bold text-lg">{{ $warehouse['name'] }}</h4>
-                            <p class="text-blue-100 text-sm">ID: {{ $warehouse['id'] }}</p>
+                            <p class="text-blue-100 text-sm">ID: {{ $warehouse['code'] }}</p>
                         </div>
                         <div class="p-4 space-y-3">
                             <div class="flex items-start gap-2">
@@ -91,7 +91,7 @@
                                 <div class="flex justify-between items-center mb-2">
                                     <p class="text-sm font-semibold text-gray-700">Capacity</p>
                                     <span class="text-sm font-bold text-gray-900">
-                                        {{ $warehouse['currentStock'] }}/{{ $warehouse['capacity'] }}
+                                        {{ $warehouse['used_stock'] }}/{{ $warehouse['capacity'] }}
                                     </span>
                                 </div>
                                 <div class="w-full bg-gray-300 rounded-full h-2">
@@ -110,7 +110,7 @@
                                 </div>
                                 <div class="bg-blue-50 rounded p-2">
                                     <p class="text-xs text-gray-600">Using</p>
-                                    <p class="font-bold text-blue-700">{{ $warehouse['currentStock'] }}</p>
+                                    <p class="font-bold text-blue-700">{{ $warehouse['used_stock'] }}</p>
                                 </div>
                             </div>
                         </div>
@@ -194,11 +194,11 @@
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <div>
+                {{-- <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Current Stock</label>
-                    <input type="number" name="currentStock" id="f-currentStock" min="0" required
+                    <input type="number" name="used_stock" id="f-used_stock" min="0" required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
+                </div> --}}
 
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closeModal()"
@@ -303,13 +303,13 @@
 
             if (warehouse) {
                 title.textContent = 'Edit Warehouse';
-                form.action = `/warehouses/${warehouse.id}`;
+                form.action = `/master/warehouses/update/${warehouse.id}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 document.getElementById('f-name').value = warehouse.name;
                 document.getElementById('f-location').value = warehouse.location;
                 document.getElementById('f-capacity').value = warehouse.capacity;
-                document.getElementById('f-currentStock').value = warehouse.currentStock;
+                // document.getElementById('f-used_stock').value = warehouse.used_stock;
 
                 // Set nilai region di Choices.js
                 if (warehouse.region) {

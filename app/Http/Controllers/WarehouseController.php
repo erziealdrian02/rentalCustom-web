@@ -2,98 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Warehouse;
 use Illuminate\Http\Request;
 
 class WarehouseController extends Controller
 {
-    private function getWarehouses()
+    public function masterWarehouses(Request $request)
     {
-        return session('warehouses', [
-            // Jawa Barat
-            [
-                'id' => 1,
-                'name' => 'Gudang Bekasi Barat',
-                'region' => 'Jawa Barat',
-                'location' => 'Bekasi Barat, Bekasi',
-                'capacity' => 1000,
-                'currentStock' => 450,
-            ],
-            [
-                'id' => 2,
-                'name' => 'Gudang Bandung Utara',
-                'region' => 'Jawa Barat',
-                'location' => 'Cicendo, Bandung',
-                'capacity' => 800,
-                'currentStock' => 620,
-            ],
-            [
-                'id' => 3,
-                'name' => 'Gudang Depok',
-                'region' => 'Jawa Barat',
-                'location' => 'Sukmajaya, Depok',
-                'capacity' => 500,
-                'currentStock' => 190,
-            ],
+        // $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
 
-            // DKI Jakarta
-            [
-                'id' => 4,
-                'name' => 'Gudang Cakung',
-                'region' => 'DKI Jakarta',
-                'location' => 'Cakung, Jakarta Timur',
-                'capacity' => 1500,
-                'currentStock' => 1320,
-            ],
-            [
-                'id' => 5,
-                'name' => 'Gudang Penjaringan',
-                'region' => 'DKI Jakarta',
-                'location' => 'Penjaringan, Jakarta Utara',
-                'capacity' => 900,
-                'currentStock' => 410,
-            ],
-
-            // Jawa Tengah
-            [
-                'id' => 6,
-                'name' => 'Gudang Semarang Utara',
-                'region' => 'Jawa Tengah',
-                'location' => 'Semarang Utara, Semarang',
-                'capacity' => 700,
-                'currentStock' => 530,
-            ],
-            [
-                'id' => 7,
-                'name' => 'Gudang Solo Baru',
-                'region' => 'Jawa Tengah',
-                'location' => 'Grogol, Sukoharjo',
-                'capacity' => 600,
-                'currentStock' => 200,
-            ],
-
-            // Jawa Timur
-            [
-                'id' => 8,
-                'name' => 'Gudang Surabaya Barat',
-                'region' => 'Jawa Timur',
-                'location' => 'Benowo, Surabaya',
-                'capacity' => 1200,
-                'currentStock' => 980,
-            ],
-            [
-                'id' => 9,
-                'name' => 'Gudang Malang',
-                'region' => 'Jawa Timur',
-                'location' => 'Lowokwaru, Malang',
-                'capacity' => 550,
-                'currentStock' => 120,
-            ],
-        ]);
-    }
-
-    public function masterWarehouses()
-    {
-        $warehouses = $this->getWarehouses();
+        $warehouses = Warehouse::get();
 
         $grouped = [];
         foreach ($warehouses as $w) {
@@ -105,57 +23,102 @@ class WarehouseController extends Controller
 
     public function masterWarehousesStore(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'location' => 'required|string|max:100',
-            'capacity' => 'required|integer|min:1',
-            'currentStock' => 'required|integer|min:0',
-        ]);
+        $model = new Warehouse();
+        $model->name = $request->name;
+        $model->region = $request->region;
+        $model->location = $request->location;
+        $model->capacity = (int) $request->capacity;
 
-        $warehouses = $this->getWarehouses();
-        $maxId = count($warehouses) ? max(array_column($warehouses, 'id')) : 0;
-        $warehouses[] = [
-            'id' => $maxId + 1,
-            'name' => $request->name,
-            'location' => $request->location,
-            'capacity' => (int) $request->capacity,
-            'currentStock' => (int) $request->currentStock,
-        ];
-        session(['warehouses' => $warehouses]);
+        // 🔤 REGION CODE (ambil huruf depan tiap kata)
+        $regionWords = explode(' ', $request->region);
+        $regionCode = '';
 
-        return redirect()->route('warehouses.index')->with('success', 'Warehouse added successfully!');
-    }
-
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'name' => 'required|string|max:100',
-            'location' => 'required|string|max:100',
-            'capacity' => 'required|integer|min:1',
-            'currentStock' => 'required|integer|min:0',
-        ]);
-
-        $warehouses = $this->getWarehouses();
-        foreach ($warehouses as &$w) {
-            if ($w['id'] == $id) {
-                $w['name'] = $request->name;
-                $w['location'] = $request->location;
-                $w['capacity'] = (int) $request->capacity;
-                $w['currentStock'] = (int) $request->currentStock;
-                break;
-            }
+        foreach ($regionWords as $word) {
+            $regionCode .= strtoupper(substr($word, 0, 1));
         }
-        session(['warehouses' => $warehouses]);
 
-        return redirect()->route('warehouses.index')->with('success', 'Warehouse updated successfully!');
+        // contoh: Jawa Barat → JB
+
+        // 🔤 LOCATION CODE (ambil 3 huruf dari tiap kata / combine)
+        $locationWords = explode(' ', $request->location);
+        $locationCode = '';
+
+        foreach ($locationWords as $word) {
+            $locationCode .= strtoupper(substr($word, 0, 1));
+        }
+
+        // kalau hasilnya < 3 huruf, tambahin dari string aslinya
+        if (strlen($locationCode) < 3) {
+            $locationCode = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $request->location), 0, 3));
+        }
+
+        // contoh:
+        // Bekasi Barat → BB → jadi fallback → BKB
+        // Lowokwaru → L → jadi LOW
+
+        // 🔢 Hitung urutan berdasarkan region + location
+        $count = Warehouse::where('region', $request->region)->where('location', $request->location)->count();
+
+        $number = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+
+        // 🧾 Final Code
+        $model->code = "{$regionCode}-{$locationCode}-{$number}";
+
+        // dd($model);
+
+        $model->save();
+
+        return redirect()->route('master.warehouses')->with('success', 'Warehouse added successfully!');
     }
 
-    public function destroy($id)
+    public function masterWarehousesUpdate(Request $request, $id)
     {
-        $warehouses = $this->getWarehouses();
-        $warehouses = array_values(array_filter($warehouses, fn($w) => $w['id'] != $id));
-        session(['warehouses' => $warehouses]);
+        $model = Warehouse::findOrFail($id);
 
-        return redirect()->route('warehouses.index')->with('success', 'Warehouse deleted successfully!');
+        $region = $request->region === '__new__' ? $request->new_region : $request->region;
+
+        $model->name = $request->name;
+        $model->region = $region;
+        $model->location = $request->location;
+        $model->capacity = (int) $request->capacity;
+
+        // Regenerate code hanya jika region atau location berubah
+        if ($model->isDirty('region') || $model->isDirty('location')) {
+            $regionWords = explode(' ', $region);
+            $regionCode = '';
+            foreach ($regionWords as $word) {
+                $regionCode .= strtoupper(substr($word, 0, 1));
+            }
+
+            $locationCode = '';
+            $locationWords = explode(' ', $request->location);
+            foreach ($locationWords as $word) {
+                $locationCode .= strtoupper(substr($word, 0, 1));
+            }
+
+            if (strlen($locationCode) < 3) {
+                $locationCode = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $request->location), 0, 3));
+            }
+
+            // Exclude warehouse ini sendiri dari count agar tidak dobel
+            $count = Warehouse::where('region', $region)->where('location', $request->location)->where('id', '!=', $id)->count();
+            $number = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+
+            $model->code = "{$regionCode}-{$locationCode}-{$number}";
+        }
+
+        $model->save(); // ← ini yang kurang
+
+        return redirect()->route('master.warehouses')->with('success', 'Warehouse updated successfully!');
+    }
+
+    public function masterWarehousesDestroy($id)
+    {
+        $warehouse = Warehouse::find($id);
+        if ($warehouse) {
+            $warehouse->delete();
+        }
+
+        return redirect()->route('master.warehouses')->with('success', 'Warehouse deleted successfully!');
     }
 }
