@@ -19,4 +19,9 @@ class Tools extends Model
     {
         return $this->belongsTo(Categories::class, 'category_id');
     }
+
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class, 'tool_id', 'id_tools');
+    }
 }

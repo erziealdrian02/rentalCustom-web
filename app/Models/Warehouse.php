@@ -9,4 +9,9 @@ class Warehouse extends Model
 {
     /** @use HasFactory<\Database\Factories\WarehouseFactory> */
     use HasFactory;
+
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class, 'warehouse_id', 'id');
+    }
 }
