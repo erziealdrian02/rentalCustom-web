@@ -18,67 +18,16 @@ class PricingController extends Controller
         return view('master.pricing', compact('tools'));
     }
 
-    public function masterPricingStore(Request $request)
+    public function masterPricingUpdate(Request $request, $id_tools)
     {
-        $request->validate([
-            'toolId' => 'required|integer',
-            'dailyRate' => 'required|numeric|min:0',
-            'weeklyRate' => 'required|numeric|min:0',
-            'monthlyRate' => 'required|numeric|min:0',
-        ]);
+        $model = Tools::findOrFail($id_tools);
 
-        $tools = $this->getTools();
-        $tool = collect($tools)->firstWhere('id', (int) $request->toolId);
+        $model->daily_rate = (int) $request->daily_rate;
+        $model->weekly_rate = (int) $request->weekly_rate;
+        $model->monthly_rate = (int) $request->monthly_rate;
 
-        $pricing = $this->getPricing();
-        $maxId = count($pricing) ? max(array_column($pricing, 'id')) : 0;
-        $pricing[] = [
-            'id' => $maxId + 1,
-            'toolId' => (int) $request->toolId,
-            'toolName' => $tool ? $tool['name'] : 'Unknown',
-            'dailyRate' => (float) $request->dailyRate,
-            'weeklyRate' => (float) $request->weeklyRate,
-            'monthlyRate' => (float) $request->monthlyRate,
-        ];
-        session(['pricing' => $pricing]);
+        $model->save();
 
-        return redirect()->route('pricing.index')->with('success', 'Pricing added successfully!');
-    }
-
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'toolId' => 'required|integer',
-            'dailyRate' => 'required|numeric|min:0',
-            'weeklyRate' => 'required|numeric|min:0',
-            'monthlyRate' => 'required|numeric|min:0',
-        ]);
-
-        $tools = $this->getTools();
-        $tool = collect($tools)->firstWhere('id', (int) $request->toolId);
-
-        $pricing = $this->getPricing();
-        foreach ($pricing as &$price) {
-            if ($price['id'] == $id) {
-                $price['toolId'] = (int) $request->toolId;
-                $price['toolName'] = $tool ? $tool['name'] : 'Unknown';
-                $price['dailyRate'] = (float) $request->dailyRate;
-                $price['weeklyRate'] = (float) $request->weeklyRate;
-                $price['monthlyRate'] = (float) $request->monthlyRate;
-                break;
-            }
-        }
-        session(['pricing' => $pricing]);
-
-        return redirect()->route('pricing.index')->with('success', 'Pricing updated successfully!');
-    }
-
-    public function destroy($id)
-    {
-        $pricing = $this->getPricing();
-        $pricing = array_values(array_filter($pricing, fn($p) => $p['id'] != $id));
-        session(['pricing' => $pricing]);
-
-        return redirect()->route('pricing.index')->with('success', 'Pricing deleted successfully!');
+        return redirect()->route('master.pricing')->with('success', 'Pricing updated successfully!');
     }
 }
