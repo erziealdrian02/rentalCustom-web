@@ -8,6 +8,11 @@
     <title>@yield('title', 'Tool Rental Management')</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
+    {{-- tambahkan di <head> atau sebelum @endsection --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
     <style>
         /* ===== MODAL ===== */
         .modal { display: none; }

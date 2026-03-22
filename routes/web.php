@@ -63,6 +63,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/master/warehouses', [WarehouseController::class, 'masterWarehouses'])->name('master.warehouses');
     Route::post('/master/warehouses/post', [WarehouseController::class, 'masterWarehousesStore'])->name('warehouses.store');
+    Route::put('/master/warehouses/update/{id}', [WarehouseController::class, 'masterWarehousesUpdate'])->name('warehouses.update');
+    Route::delete('/master/warehouses/delete/{id}', [WarehouseController::class, 'masterWarehousesDestroy'])->name('warehouses.destroy');
 
     Route::get('/master/customers', [CustomersController::class, 'masterCustomers'])->name('master.customers');
     Route::post('/master/customers/post', [CustomersController::class, 'masterCustomersStore'])->name('customers.store');
