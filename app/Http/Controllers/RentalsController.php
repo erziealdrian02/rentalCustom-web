@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customers;
+use App\Models\Stock;
+use App\Models\Tools;
 use Illuminate\Http\Request;
 
 class RentalsController extends Controller
@@ -164,28 +167,36 @@ class RentalsController extends Controller
 
     public function rentalForm()
     {
-        $getCustomers = $this->getCustomers();
-        $getTools = $this->getTools();
+        $getCustomers = Customers::get();
+
+        // Ambil tools yang punya available_quantity > 0 di warehouse_stock
+        $getTools = Tools::whereHas('stocks', function ($query) {
+            $query->where('quantity', '>', 0);
+        })->get();
+
+        // dd($getTools);
+
+        $getStock = Stock::get();
 
         $customers = count(
-            array_filter($getCustomers, function ($r) {
-                return isset($r['status']) && $r['status'] === 'Active';
+            array_filter($getCustomers->toArray(), function ($r) {
+                return isset($r['status']) && $r['status'] === 'active';
             }),
         );
         $tools = count(
-            array_filter($getTools, function ($r) {
-                return isset($r['status']) && $r['status'] === 'Available';
+            array_filter($getTools->toArray(), function ($r) {
+                return isset($r['status']) && $r['status'] === 'available';
             }),
         );
 
-        // Buat pricing map: toolId => rates (untuk dipakai JS)
         $pricingMap = [];
-        foreach ($this->getPricing() as $p) {
-            $pricingMap[$p['toolId']] = [
-                'dailyRate' => $p['dailyRate'],
-                'weeklyRate' => $p['weeklyRate'],
-                'monthlyRate' => $p['monthlyRate'],
+        foreach ($getTools as $tool) {
+            $pricingMap[$tool['id_tools']] = [
+                'dailyRate' => $tool['daily_rate'],
+                'weeklyRate' => $tool['weekly_rate'],
+                'monthlyRate' => $tool['monthly_rate'],
             ];
+            // dd($pricingMap);
         }
 
         return view('rentals.createRental', compact('customers', 'getCustomers', 'getTools', 'tools', 'pricingMap'));
