@@ -39,12 +39,9 @@
                                     <option value="{{ $wh->id }}">{{ $wh->name }} — {{ $wh->location }}</option>
                                 @endforeach
                             </select>
-                        </div>
 
-                        <div class="mb-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                            <textarea name="notes" id="notes" rows="2" placeholder="Optional notes..."
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+                            <textarea name="notes" placeholder="Additional notes..."
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                         </div>
                     </div>
 
@@ -257,11 +254,11 @@
                 </div>
                 <div class="text-xs text-gray-500 pt-2 space-y-1.5">
                     ${items.map(i => `
-                            <div class="flex justify-between">
-                                <span>${i.quantity}x ${i.toolName}</span>
-                                <span class="text-gray-700 font-medium">${fmtRp(i.totalReplacement)}</span>
-                            </div>
-                        `).join('')}
+                                                            <div class="flex justify-between">
+                                                                <span>${i.quantity}x ${i.toolName}</span>
+                                                                <span class="text-gray-700 font-medium">${fmtRp(i.totalReplacement)}</span>
+                                                            </div>
+                                                        `).join('')}
                 </div>
             `;
 
@@ -315,6 +312,52 @@
 
             document.getElementById('restock-form').submit();
         }
+
+        let warehouseChoices = null;
+        let toolsChoices = null;
+
+        function initWarehouseChoices() {
+            const el = document.getElementById('warehouseId');
+            if (warehouseChoices) {
+                warehouseChoices.destroy();
+            }
+            warehouseChoices = new Choices(el, {
+                searchEnabled: true,
+                searchPlaceholderValue: 'Cari warehouse...',
+                itemSelectText: '',
+                noResultsText: 'Warehouse tidak ditemukan',
+                shouldSort: false,
+            });
+
+            // Gunakan event dari Choices, bukan onchange native
+            el.addEventListener('change', function() {
+                updateSubmitBtn();
+            });
+        }
+
+        function initToolsChoices() {
+            const el = document.getElementById('toolId');
+            if (toolsChoices) {
+                toolsChoices.destroy();
+            }
+            toolsChoices = new Choices(el, {
+                searchEnabled: true,
+                searchPlaceholderValue: 'Cari tools...',
+                itemSelectText: '',
+                noResultsText: 'Tools tidak ditemukan',
+                shouldSort: false,
+            });
+
+            // Gunakan event dari Choices, bukan onchange native
+            el.addEventListener('change', function() {
+                onToolChange();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initWarehouseChoices();
+            initToolsChoices();
+        });
     </script>
 
 @endsection
