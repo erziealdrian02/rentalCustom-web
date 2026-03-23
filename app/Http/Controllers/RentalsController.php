@@ -6,51 +6,115 @@ use Illuminate\Http\Request;
 
 class RentalsController extends Controller
 {
-    private function getRentals()
+    private function getCustomers(): array
     {
-        return session('rentals', [
+        return [['id' => 1, 'name' => 'John Doe', 'email' => 'john@example.com', 'phone' => '+62 812-0001-0001'], ['id' => 2, 'name' => 'Jane Smith', 'email' => 'jane@example.com', 'phone' => '+62 812-0002-0002'], ['id' => 3, 'name' => 'Bob Johnson', 'email' => 'bob@example.com', 'phone' => '+62 812-0003-0003'], ['id' => 4, 'name' => 'Alice Brown', 'email' => 'alice@example.com', 'phone' => '+62 812-0004-0004']];
+    }
+
+    /**
+     * Data dummy rentals
+     */
+    private function getRentals(): array
+    {
+        return [
             [
                 'id' => 1,
-                'invoiceNumber' => 'INV-2025-001',
+                'invoiceNumber' => 'INV-2024-001',
                 'customerId' => 1,
                 'customerName' => 'John Doe',
                 'status' => 'Active',
-                'rentalStartDate' => '2025-01-10',
-                'rentalEndDate' => '2025-01-17',
-                'totalPrice' => 175.0,
-                'createdDate' => '2025-01-10',
-                'items' => [['toolName' => 'Angle Grinder', 'quantity' => 1, 'dailyRate' => 25.0, 'subtotal' => 175.0, 'startDate' => '2025-01-10', 'endDate' => '2025-01-17']],
+                'rentalStartDate' => '2024-01-01',
+                'rentalEndDate' => '2024-01-08',
+                'totalPrice' => 350000,
+                'createdDate' => '2024-01-01',
+                'items' => [
+                    [
+                        'toolId' => 1,
+                        'toolName' => 'Hammer Drill',
+                        'quantity' => 1,
+                        'startDate' => '2024-01-01',
+                        'endDate' => '2024-01-08',
+                        'dailyRate' => 50000,
+                        'subtotal' => 350000,
+                    ],
+                ],
             ],
             [
                 'id' => 2,
-                'invoiceNumber' => 'INV-2025-002',
+                'invoiceNumber' => 'INV-2024-002',
                 'customerId' => 2,
                 'customerName' => 'Jane Smith',
                 'status' => 'Completed',
-                'rentalStartDate' => '2025-01-05',
-                'rentalEndDate' => '2025-01-12',
-                'totalPrice' => 210.0,
-                'createdDate' => '2025-01-05',
-                'items' => [['toolName' => 'Drill Machine', 'quantity' => 1, 'dailyRate' => 20.0, 'subtotal' => 140.0, 'startDate' => '2025-01-05', 'endDate' => '2025-01-12'], ['toolName' => 'Safety Helmet', 'quantity' => 2, 'dailyRate' => 5.0, 'subtotal' => 70.0, 'startDate' => '2025-01-05', 'endDate' => '2025-01-12']],
+                'rentalStartDate' => '2024-01-05',
+                'rentalEndDate' => '2024-01-12',
+                'totalPrice' => 560000,
+                'createdDate' => '2024-01-05',
+                'items' => [
+                    [
+                        'toolId' => 2,
+                        'toolName' => 'Angle Grinder',
+                        'quantity' => 1,
+                        'startDate' => '2024-01-05',
+                        'endDate' => '2024-01-12',
+                        'dailyRate' => 40000,
+                        'subtotal' => 280000,
+                    ],
+                    [
+                        'toolId' => 3,
+                        'toolName' => 'Circular Saw',
+                        'quantity' => 1,
+                        'startDate' => '2024-01-05',
+                        'endDate' => '2024-01-12',
+                        'dailyRate' => 40000,
+                        'subtotal' => 280000,
+                    ],
+                ],
             ],
             [
                 'id' => 3,
-                'invoiceNumber' => 'INV-2025-003',
+                'invoiceNumber' => 'INV-2024-003',
                 'customerId' => 3,
                 'customerName' => 'Bob Johnson',
                 'status' => 'Active',
-                'rentalStartDate' => '2025-01-15',
-                'rentalEndDate' => '2025-01-22',
-                'totalPrice' => 105.0,
-                'createdDate' => '2025-01-15',
-                'items' => [['toolName' => 'Hammer', 'quantity' => 3, 'dailyRate' => 5.0, 'subtotal' => 105.0, 'startDate' => '2025-01-15', 'endDate' => '2025-01-22']],
+                'rentalStartDate' => '2024-01-10',
+                'rentalEndDate' => '2024-01-17',
+                'totalPrice' => 420000,
+                'createdDate' => '2024-01-10',
+                'items' => [
+                    [
+                        'toolId' => 4,
+                        'toolName' => 'Pressure Washer',
+                        'quantity' => 1,
+                        'startDate' => '2024-01-10',
+                        'endDate' => '2024-01-17',
+                        'dailyRate' => 60000,
+                        'subtotal' => 420000,
+                    ],
+                ],
             ],
-        ]);
-    }
-
-    private function getCustomers()
-    {
-        return session('customers', [['id' => 1, 'name' => 'John Doe', 'email' => 'john@example.com', 'phone' => '081234567890'], ['id' => 2, 'name' => 'Jane Smith', 'email' => 'jane@example.com', 'phone' => '082345678901'], ['id' => 3, 'name' => 'Bob Johnson', 'email' => 'bob@example.com', 'phone' => '083456789012']]);
+            [
+                'id' => 4,
+                'invoiceNumber' => 'INV-2024-004',
+                'customerId' => 4,
+                'customerName' => 'Alice Brown',
+                'status' => 'Completed',
+                'rentalStartDate' => '2024-01-15',
+                'rentalEndDate' => '2024-01-22',
+                'totalPrice' => 700000,
+                'createdDate' => '2024-01-15',
+                'items' => [
+                    [
+                        'toolId' => 5,
+                        'toolName' => 'Concrete Mixer',
+                        'quantity' => 1,
+                        'startDate' => '2024-01-15',
+                        'endDate' => '2024-01-22',
+                        'dailyRate' => 100000,
+                        'subtotal' => 700000,
+                    ],
+                ],
+            ],
+        ];
     }
 
     private function getTools()
@@ -65,19 +129,22 @@ class RentalsController extends Controller
 
     public function rental()
     {
-        $rentals = $this->getRentals();
         $customers = $this->getCustomers();
+        $rentals = $this->getRentals();
 
+        // Hitung summary
         $totalRentals = count($rentals);
-        $activeRentals = count(array_filter($rentals, function ($r) {
-            return isset($r['status']) && $r['status'] === 'Active';
-        }));
-        $completedRentals = count(array_filter($rentals, function ($r) {
-            return isset($r['status']) && $r['status'] === 'Completed';
-        }));
+        $activeRentals = count(array_filter($rentals, fn($r) => $r['status'] === 'Active'));
+        $completedRentals = count(array_filter($rentals, fn($r) => $r['status'] === 'Completed'));
         $totalRevenue = array_sum(array_column($rentals, 'totalPrice'));
 
-        return view('rentals.rentals', compact('rentals', 'customers', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
+        // Buat lookup customers by id untuk modal
+        $customersById = [];
+        foreach ($customers as $c) {
+            $customersById[$c['id']] = $c;
+        }
+
+        return view('rentals.rentals', compact('rentals', 'customersById', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
     }
 
     public function show($id)
@@ -100,12 +167,16 @@ class RentalsController extends Controller
         $getCustomers = $this->getCustomers();
         $getTools = $this->getTools();
 
-        $customers = count(array_filter($getCustomers, function ($r) {
-            return isset($r['status']) && $r['status'] === 'Active';
-        }));
-        $tools = count(array_filter($getTools, function ($r) {
-            return isset($r['status']) && $r['status'] === 'Available';
-        }));
+        $customers = count(
+            array_filter($getCustomers, function ($r) {
+                return isset($r['status']) && $r['status'] === 'Active';
+            }),
+        );
+        $tools = count(
+            array_filter($getTools, function ($r) {
+                return isset($r['status']) && $r['status'] === 'Available';
+            }),
+        );
 
         // Buat pricing map: toolId => rates (untuk dipakai JS)
         $pricingMap = [];
@@ -117,7 +188,7 @@ class RentalsController extends Controller
             ];
         }
 
-        return view('rentals.createRental', compact('customers','getCustomers','getTools', 'tools', 'pricingMap'));
+        return view('rentals.createRental', compact('customers', 'getCustomers', 'getTools', 'tools', 'pricingMap'));
     }
 
     public function store(Request $request)
