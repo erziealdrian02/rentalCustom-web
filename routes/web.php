@@ -88,7 +88,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/transactions/rentals', [RentalsController::class, 'rental'])->name('transactions.rentals');
     Route::get('/transactions/rentals/form', [RentalsController::class, 'rentalForm'])->name('transactions.rentals.form');
-    Route::post('/transactions/rentals/post', [RentalsController::class, 'store'])->name('transactions.rentals.store');
+    Route::post('/transactions/rentals/post', [RentalsController::class, 'rentalStore'])->name('transactions.rentals.store');
     Route::get('/transactions/rentals/detail/{id}', [RentalsController::class, 'show'])->name('transactions.rentals.show');
 
     Route::get('/shipping/list', [ShippingController::class, 'list'])->name('shipping.list');

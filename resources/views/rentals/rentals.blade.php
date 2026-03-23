@@ -30,7 +30,7 @@
         </div>
         <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
             <p class="text-gray-600 text-sm font-medium">Total Revenue</p>
-            <p class="text-3xl font-bold text-purple-600 mt-2">${{ number_format($totalRevenue, 2) }}</p>
+            <p class="text-3xl font-bold text-purple-600 mt-2">Rp. {{ number_format($totalRevenue) }}</p>
         </div>
     </div>
 
@@ -45,7 +45,8 @@
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Tools</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Rental Period</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Total Price</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Rental Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Payment Status</th>
                         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Action</th>
                     </tr>
                 </thead>
@@ -53,32 +54,39 @@
                     @forelse($rentals as $rental)
                         @php
                             $statusColor =
-                                $rental['status'] === 'Active'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-blue-100 text-blue-800';
-                            $toolsCount = count($rental['items'] ?? []);
+                                $rental->rental_status === 'Pending'
+                                    ? 'bg-yellow-100 text-yellow-800'
+                                    : 'bg-green-100 text-green-800';
+                            $toolsCount = count(json_decode($rental->movement_id, true) ?? []);
                             $startDate = \Carbon\Carbon::parse($rental['rentalStartDate'])->format('d M Y');
                             $endDate = \Carbon\Carbon::parse($rental['rentalEndDate'])->format('d M Y');
                         @endphp
                         <tr class="hover:bg-gray-50 transition cursor-pointer"
-                            onclick="openRentalModal({{ $rental['id'] }})">
-                            <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $rental['invoiceNumber'] }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-600">{{ $rental['customerName'] }}</td>
+                            onclick="openRentalModal('{{ $rental->id }}')">
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $rental->invoice_number }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">{{ $rental->customer->name ?? 'N/A' }}</td>
                             <td class="px-4 py-3 text-sm text-gray-600">
                                 <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                                     {{ $toolsCount }} tool{{ $toolsCount > 1 ? 's' : '' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3 text-sm text-gray-600">{{ $startDate }} - {{ $endDate }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                {{ \Carbon\Carbon::parse($rental['rental_start_date'])->format('d M Y') }} -
+                                {{ \Carbon\Carbon::parse($rental['rental_end_date'])->format('d M Y') }}</td>
                             <td class="px-4 py-3 text-sm font-semibold text-gray-900">
-                                ${{ number_format($rental['totalPrice'], 2) }}</td>
+                                Rp. {{ number_format($rental->total_price) }}</td>
                             <td class="px-4 py-3 text-sm">
                                 <span class="inline-block px-3 py-1 rounded-full text-xs font-medium {{ $statusColor }}">
-                                    {{ $rental['status'] }}
+                                    {{ $rental->rental_status }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-sm">
-                                <button onclick="event.stopPropagation(); openRentalModal({{ $rental['id'] }})"
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-medium {{ $statusColor }}">
+                                    {{ $rental->payment_status }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                <button onclick="event.stopPropagation(); openRentalModal({{ $rental->id }})"
                                     class="text-blue-600 hover:text-blue-700 font-medium">
                                     View
                                 </button>
@@ -175,78 +183,104 @@
 
     {{-- Data JSON untuk modal (embed sekali, tidak ada JS yang generate tabel) --}}
     <script>
-        const rentalsData = @json($rentals);
-        const customersById = @json($customersById);
+        // const rentalsData = @json($rentals->items());
+        // const customersById = @json($customersById);
+        // const movementsByRentalId = @json($movementsByRentalId); // <-- tambah ini
+
+        const rentalsData = JSON.parse(atob('{{ base64_encode(json_encode(array_values($rentals->items()))) }}'));
+        const customersById = JSON.parse(atob('{{ base64_encode(json_encode($customersById)) }}'));
+        const movementsByRentalId = JSON.parse(atob('{{ base64_encode(json_encode($movementsByRentalId)) }}'));
+
+        console.log(JSON.parse(atob('{{ base64_encode(json_encode($movementsByRentalId)) }}')));
 
         function formatCurrency(amount) {
-            return '$' + new Intl.NumberFormat('en-US', {
-                minimumFractionDigits: 2
-            }).format(amount);
+            return 'Rp. ' + new Intl.NumberFormat('id-ID').format(amount);
         }
 
         function formatDate(dateStr) {
-            return new Date(dateStr).toLocaleDateString('en-US');
+            if (!dateStr) return '-';
+            return new Date(dateStr).toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
         }
 
         function openRentalModal(rentalId) {
             const rental = rentalsData.find(r => r.id === rentalId);
             if (!rental) return;
 
-            const customer = customersById[rental.customerId] ?? null;
+            const customer = customersById[rental.customer_id] ?? null;
+            const movements = movementsByRentalId[rentalId] ?? [];
 
             // Header
-            document.getElementById('modal-invoice').textContent = rental.invoiceNumber;
+            document.getElementById('modal-invoice').textContent = rental.invoice_number;
             document.getElementById('modal-created').textContent =
-                'Created: ' + formatDate(rental.createdDate ?? new Date());
+                'Created: ' + formatDate(rental.created_at);
 
             // Customer
-            document.getElementById('modal-customer-name').textContent = rental.customerName;
+            document.getElementById('modal-customer-name').textContent = rental.customer?.name ?? 'N/A';
             document.getElementById('modal-customer-email').textContent = customer?.email ?? '';
             document.getElementById('modal-customer-phone').textContent = customer?.phone ?? '';
 
             // Status badge
             const badge = document.getElementById('modal-status-badge');
-            badge.textContent = rental.status;
+            badge.textContent = rental.rental_status;
+            const statusClasses = {
+                'Pending': 'bg-yellow-100 text-yellow-800',
+                'Delivered': 'bg-green-100 text-green-800',
+                'On Track': 'bg-blue-100 text-blue-800',
+                'Overdue': 'bg-red-100 text-red-800',
+                'Returning': 'bg-purple-100 text-purple-800',
+                'On Check': 'bg-gray-100 text-gray-800',
+            };
             badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-medium ' +
-                (rental.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800');
+                (statusClasses[rental.rental_status] ?? 'bg-gray-100 text-gray-800');
 
             // Rental period
             document.getElementById('modal-period').textContent =
-                formatDate(rental.rentalStartDate) + ' to ' + formatDate(rental.rentalEndDate);
+                formatDate(rental.rental_start_date) + ' – ' + formatDate(rental.rental_end_date);
 
-            // Items
-            const items = rental.items ?? [];
-            document.getElementById('modal-items-title').textContent = `Rental Items (${items.length})`;
-            document.getElementById('modal-items-list').innerHTML = items.map(item => {
-                const days = Math.max(1, Math.ceil(
-                    (new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24)
-                ));
+            // Items dari stock_movements
+            document.getElementById('modal-items-title').textContent = `Rental Items (${movements.length})`;
+            document.getElementById('modal-items-list').innerHTML = movements.map(mov => {
+                const toolName = mov.tool?.name ?? mov.tool_id;
+                const toolCode = mov.tool?.code_tools ?? '';
+                const dailyRate = mov.tool?.daily_rate ?? 0;
+
+                // Hitung durasi dari rental period
+                const startDate = new Date(rental.rental_start_date);
+                const endDate = new Date(rental.rental_end_date);
+                const days = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+
+                const subtotal = dailyRate * mov.quantity * days;
+
                 return `
-                    <div class="border-l-4 border-blue-400 bg-blue-50 rounded-lg p-4">
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <p class="font-semibold text-gray-900">${item.toolName}</p>
-                                <p class="text-sm text-gray-500">Quantity: ${item.quantity}</p>
-                            </div>
-                            <span class="text-lg font-bold text-blue-600">${formatCurrency(item.subtotal)}</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                                <p class="text-gray-500">Daily Rate:</p>
-                                <p class="font-semibold text-gray-900">${formatCurrency(item.dailyRate)}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500">Duration:</p>
-                                <p class="font-semibold text-gray-900">${days} days</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+        <div class="border-l-4 border-blue-400 bg-blue-50 rounded-lg p-4">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <p class="font-semibold text-gray-900">${toolName}</p>
+                    <p class="text-sm text-gray-500">Quantity: ${mov.quantity}</p>
+                </div>
+                <span class="text-lg font-bold text-blue-600">${formatCurrency(subtotal)}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                    <p class="text-gray-500">Daily Rate:</p>
+                    <p class="font-semibold text-gray-900">${formatCurrency(dailyRate)}</p>
+                </div>
+                <div>
+                    <p class="text-gray-500">Duration:</p>
+                    <p class="font-semibold text-gray-900">${days} days</p>
+                </div>
+            </div>
+        </div>
+    `;
+            }).join('') || '<p class="text-gray-400 text-sm">No items found.</p>';
 
             // Summary
-            document.getElementById('modal-total-amount').textContent = formatCurrency(rental.totalPrice);
-            document.getElementById('modal-total-items').textContent = items.length;
+            document.getElementById('modal-total-amount').textContent = formatCurrency(rental.total_price);
+            document.getElementById('modal-total-items').textContent = movements.length;
 
             // Tampilkan modal
             document.getElementById('rentalModal').classList.remove('hidden');
@@ -262,7 +296,6 @@
             if (e.target === document.getElementById('rentalModal')) closeRentalModal();
         }
 
-        // Tutup modal dengan tombol ESC
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') closeRentalModal();
         });

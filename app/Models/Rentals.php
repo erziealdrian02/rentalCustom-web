@@ -16,4 +16,9 @@ class Rentals extends Model
     protected $keyType = 'string';
 
     protected $fillable = ['invoice_number', 'customer_id', 'warehouse_id', 'delivery_id', 'driver_id', 'rental_start_date', 'rental_end_date', 'estimated_delivery_time', 'actual_delivery_time', 'total_price', 'rental_status', 'payment_status', 'notes', 'created_by'];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customers::class, 'customer_id');
+    }
 }

@@ -3,9 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customers;
+use App\Models\Rentals;
 use App\Models\Stock;
+use App\Models\StockMovement;
 use App\Models\Tools;
+use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Pest\ArchPresets\Custom;
 
 class RentalsController extends Controller
 {
@@ -130,24 +136,43 @@ class RentalsController extends Controller
         return session('pricing', [['toolId' => 1, 'dailyRate' => 25.0, 'weeklyRate' => 150.0, 'monthlyRate' => 500.0], ['toolId' => 2, 'dailyRate' => 5.0, 'weeklyRate' => 30.0, 'monthlyRate' => 100.0], ['toolId' => 3, 'dailyRate' => 3.0, 'weeklyRate' => 18.0, 'monthlyRate' => 60.0], ['toolId' => 4, 'dailyRate' => 20.0, 'weeklyRate' => 120.0, 'monthlyRate' => 400.0]]);
     }
 
-    public function rental()
+    public function rental(Request $request)
     {
-        $customers = $this->getCustomers();
-        $rentals = $this->getRentals();
+        $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
+
+        $customers = Customers::all();
+        $rentals = Rentals::with('customer')->paginate($perPage);
+
+        // Kumpulkan semua movement_id dari semua rental
+        $allMovementIds = [];
+        foreach ($rentals->items() as $rental) {
+            $ids = json_decode($rental->movement_id, true) ?? [];
+            $allMovementIds = array_merge($allMovementIds, $ids);
+        }
+
+        // Ambil semua stock_movements yang relevan sekaligus (with tool)
+        $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovementIds))->get()->keyBy('id');
 
         // Hitung summary
-        $totalRentals = count($rentals);
-        $activeRentals = count(array_filter($rentals, fn($r) => $r['status'] === 'Active'));
-        $completedRentals = count(array_filter($rentals, fn($r) => $r['status'] === 'Completed'));
-        $totalRevenue = array_sum(array_column($rentals, 'totalPrice'));
+        $totalRentals = $rentals->total();
+        $activeRentals = collect($rentals->items())->where('rental_status', 'Pending')->count();
+        $completedRentals = collect($rentals->items())->where('payment_status', 'paid')->count();
+        $totalRevenue = collect($rentals->items())->sum('total_price');
 
         // Buat lookup customers by id untuk modal
         $customersById = [];
         foreach ($customers as $c) {
-            $customersById[$c['id']] = $c;
+            $customersById[$c->id] = $c;
         }
 
-        return view('rentals.rentals', compact('rentals', 'customersById', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
+        // Buat lookup movements by rental id untuk modal
+        $movementsByRentalId = [];
+        foreach ($rentals->items() as $rental) {
+            $ids = json_decode($rental->movement_id, true) ?? [];
+            $movementsByRentalId[$rental->id] = collect($ids)->map(fn($id) => $movements->get($id))->filter()->values();
+        }
+
+        return view('rentals.rentals', compact('rentals', 'customersById', 'movementsByRentalId', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
     }
 
     public function show($id)
@@ -202,15 +227,19 @@ class RentalsController extends Controller
         return view('rentals.createRental', compact('customers', 'getCustomers', 'getTools', 'tools', 'pricingMap'));
     }
 
-    public function store(Request $request)
+    public function rentalStore(Request $request)
     {
         $request->validate([
-            'customerId' => 'required|integer',
+            'customerId' => 'required|exists:customers,id',
             'items' => 'required|string',
         ]);
 
-        $customers = $this->getCustomers();
-        $customer = collect($customers)->firstWhere('id', (int) $request->customerId);
+        $items = json_decode($request->items, true);
+
+        // dd($request->all(), $items);
+
+        $customer = Customers::findOrFail($request->customerId);
+        // $customer = collect($customers)->firstWhere('id', (int) $request->customerId);
 
         if (!$customer) {
             return back()
@@ -236,38 +265,74 @@ class RentalsController extends Controller
         sort($allStarts);
         rsort($allEnds);
 
-        $rentals[] = [
-            'id' => $maxId + 1,
-            'invoiceNumber' => $invoiceNum,
-            'customerId' => (int) $request->customerId,
-            'customerName' => $customer['name'],
-            'items' => $items,
-            'totalPrice' => $totalPrice,
-            'status' => 'Active',
-            'createdDate' => now()->toDateString(),
-            'rentalStartDate' => $allStarts[0],
-            'rentalEndDate' => $allEnds[0],
-        ];
+        foreach ($items as $item) {
+            $findWarehouse = Stock::where('tool_id', $item['toolId'])->orderByDesc('quantity')->value('warehouse_id');
+            $warehouse = Warehouse::findOrFail($findWarehouse);
 
-        session(['rentals' => $rentals]);
+            // 🔤 Name Code
+            $nameWords = explode(' ', $customer->name);
+            $nameCode = '';
+            foreach ($nameWords as $word) {
+                $nameCode .= strtoupper(substr($word, 0, 1));
+            }
+            // 🔤 City Code
+            $cityWords = explode(' ', $customer->city);
+            $cityCode = '';
+            foreach ($cityWords as $word) {
+                $cityCode .= strtoupper(substr($word, 0, 1));
+            }
+            if (strlen($cityCode) < 3) {
+                $cityCode = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $customer->city), 0, 3));
+            }
+            // 🔢 Count: berapa stock movement IN yang sudah pernah masuk ke customer ini
+            $count = StockMovement::where('warehouse_id', $warehouse->id)->where('stock_type', 'RENT')->count();
+            $number = str_pad($count + 1, 5, '0', STR_PAD_LEFT);
+
+            // 🏷️ Final reference_id
+            $referenceId = "RENT-{$nameCode}-{$cityCode}-{$number}";
+
+            $movement = new StockMovement();
+            $movement->id = (string) Str::uuid();
+            $movement->reference_id = $referenceId;
+            $movement->warehouse_id = $warehouse->id;
+            $movement->tool_id = $item['toolId'];
+            $movement->movement_type = 'WAITING';
+            $movement->stock_type = 'RENT';
+            $movement->quantity = $item['quantity'];
+            $movement->notes = $request->notes;
+            $movement->created_by = auth()->id();
+
+            $movementIds[] = $movement->id;
+            $warehouseIds[] = $warehouse->id;
+
+            $stock = Stock::where('tool_id', $item['toolId'])->where('warehouse_id', $findWarehouse)->firstOrFail();
+            $stock->quantity -= $item['quantity'];
+
+            $movement->save();
+            $stock->save();
+        }
+
+        // dd($items);
+
+        $rental = new Rentals();
+        $rental->id = (string) Str::uuid();
+        $rental->invoice_number = $invoiceNum;
+        $rental->customer_id = $request->customerId;
+        $rental->warehouse_id = json_encode(array_unique($warehouseIds));
+        $rental->movement_id = json_encode($movementIds);
+        $rental->rental_start_date = $item['startDate'];
+        $rental->rental_end_date = $item['endDate'];
+        $rental->estimated_delivery_time = Carbon::parse($item['startDate'])->addDay();
+        $rental->total_price = $totalPrice;
+        $rental->rental_status = 'pending';
+        $rental->payment_status = 'unpaid';
+        // $rental->notes = $request->notes;
+        $rental->created_by = auth()->id();
+
+        $rental->save();
 
         return redirect()
-            ->route('rentals.index')
+            ->route('transactions.rentals')
             ->with('success', "Rental created! Invoice: {$invoiceNum}");
     }
-
-    // public function print($id)
-    // {
-    //     $rentals = $this->getRentals();
-    //     $customers = $this->getCustomers();
-
-    //     $rental = collect($rentals)->firstWhere('id', (int) $id);
-    //     if (!$rental) {
-    //         abort(404);
-    //     }
-
-    //     $customer = collect($customers)->firstWhere('id', $rental['customerId']);
-
-    //     return view('rentals.print', compact('rental', 'customer'));
-    // }
 }
