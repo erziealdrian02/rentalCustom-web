@@ -148,10 +148,15 @@ class StockController extends Controller
 
     public function movement(Request $request)
     {
-        $movements = $this->getMovements();
+        $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
         $typeFilter = $request->get('type', '');
+        $query = StockMovement::query();
 
-        $filtered = $typeFilter ? array_values(array_filter($movements, fn($m) => $m['type'] === $typeFilter)) : $movements;
+        if ($typeFilter) {
+            $query->where('stock_type', $typeFilter);
+        }
+
+        $filtered = $query->paginate($perPage);
 
         $types = ['IN', 'OUT', 'RENT', 'RETURN', 'LOST', 'DAMAGED', 'RESTOCK', 'AUDIT', 'ADJUSTMENT'];
 

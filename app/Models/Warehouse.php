@@ -14,4 +14,9 @@ class Warehouse extends Model
     {
         return $this->hasMany(Stock::class, 'warehouse_id', 'id');
     }
+
+    public function movement_stocks()
+    {
+        return $this->hasMany(StockMovement::class, 'warehouse_id', 'id');
+    }
 }
