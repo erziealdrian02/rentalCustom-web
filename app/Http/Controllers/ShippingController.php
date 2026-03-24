@@ -96,14 +96,39 @@ class ShippingController extends Controller
 
     public function shippingList()
     {
-        $shippings = $this->getShippings();
+        $shippings = Shipping::all();
 
-        $totalShipments = count($shippings);
-        $delivered = count(array_filter($shippings, fn($s) => $s['status'] === 'Delivered'));
-        $inTransit = count(array_filter($shippings, fn($s) => $s['status'] === 'In Transit'));
-        $pending = count(array_filter($shippings, fn($s) => $s['status'] === 'Pending'));
+        // Kumpulkan semua rental_id dan driver_id yang dibutuhkan
+        $allRentalIds = [];
+        $allDriverIds = [];
 
-        return view('shipping.shippingList', compact('shippings', 'totalShipments', 'delivered', 'inTransit', 'pending'));
+        foreach ($shippings as $shipping) {
+            $rentalIds = is_array($shipping->rental_id) ? $shipping->rental_id : json_decode($shipping->rental_id, true) ?? [];
+
+            $allRentalIds = array_merge($allRentalIds, $rentalIds);
+            $allDriverIds[] = $shipping->driver_id;
+        }
+
+        // Fetch semua data yang dibutuhkan sekaligus
+        $rentals = Rentals::with('customer')->whereIn('id', array_unique($allRentalIds))->get()->keyBy('id');
+        $drivers = Driver::whereIn('id', array_unique($allDriverIds))->get()->keyBy('id');
+        $warehouses = Warehouse::all()->keyBy('id');
+
+        // Kumpulkan semua movement_id dari rentals
+        $allMovementIds = [];
+        foreach ($rentals as $rental) {
+            $ids = json_decode($rental->movement_id, true) ?? [];
+            $allMovementIds = array_merge($allMovementIds, $ids);
+        }
+        $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovementIds))->get()->keyBy('id');
+
+        // Summary counts
+        $totalShipments = $shippings->count();
+        $delivered = $shippings->where('delivery_status', 'Delivered')->count();
+        $onTrack = $shippings->where('delivery_status', 'On Track')->count();
+        $pending = $shippings->where('delivery_status', 'Pending')->count();
+
+        return view('shipping.shippingList', compact('shippings', 'rentals', 'drivers', 'warehouses', 'movements', 'totalShipments', 'delivered', 'onTrack', 'pending'));
     }
 
     public function shippingForm()
@@ -175,7 +200,7 @@ class ShippingController extends Controller
         while (Shipping::where('delivery_number', $deliveryNumber)->exists()) {
             $deliveryNumber = 'DEL-' . strtoupper(Str::random(4)) . '-' . now()->format('Ymd');
         }
-        
+
         // dd($rentalItems);
 
         $shipping = new Shipping();
@@ -204,5 +229,147 @@ class ShippingController extends Controller
         }
 
         return redirect()->route('shipping.list')->with('success', 'Shipment created successfully!');
+    }
+
+    // ShippingController.php
+
+    public function shippingDriver($id)
+    {
+        $driver = Driver::findOrFail($id);
+
+        // Ambil semua shipping yang driver_id-nya sama
+        $shippings = Shipping::where('driver_id', $id)
+            ->whereIn('delivery_status', ['On Track', 'Pending', 'Delivered']) // filter hanya status yang relevan
+            ->get();
+
+        // dd($driver, $shippings);
+
+        // Resolve rental & warehouse data
+        $allRentalIds = [];
+        foreach ($shippings as $shipping) {
+            $ids = is_array($shipping->rental_id) ? $shipping->rental_id : json_decode($shipping->rental_id, true) ?? [];
+            $allRentalIds = array_merge($allRentalIds, $ids);
+        }
+
+        $rentals = Rentals::with('customer')->whereIn('id', array_unique($allRentalIds))->get()->keyBy('id');
+        $warehouses = Warehouse::all()->keyBy('id');
+
+        // Movements
+        $allMovIds = [];
+        foreach ($rentals as $r) {
+            $ids = json_decode($r->movement_id, true) ?? [];
+            $allMovIds = array_merge($allMovIds, $ids);
+        }
+        $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovIds))->get()->keyBy('id');
+
+        return view('shipping.driver.driverShippingList', compact('driver', 'shippings', 'rentals', 'warehouses', 'movements'));
+    }
+
+    public function shippingDriverDeparture($delivery_number)
+    {
+        $shipping = Shipping::where('delivery_number', $delivery_number)->firstOrFail();
+        $driver = Driver::find($shipping->driver_id);
+
+        $rentalIds = is_array($shipping->rental_id) ? $shipping->rental_id : json_decode($shipping->rental_id, true) ?? [];
+
+        $rentals = Rentals::with('customer')->whereIn('id', $rentalIds)->get()->keyBy('id');
+        $warehouses = Warehouse::all()->keyBy('id');
+
+        $allMovIds = [];
+        foreach ($rentals as $r) {
+            $ids = json_decode($r->movement_id, true) ?? [];
+            $allMovIds = array_merge($allMovIds, $ids);
+        }
+        $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovIds))->get()->keyBy('id');
+
+        $fromLocation = is_array($shipping->from_location) ? $shipping->from_location : json_decode($shipping->from_location, true) ?? [];
+
+        return view('shipping.driver.driverDeparture', compact('shipping', 'driver', 'rentals', 'warehouses', 'movements', 'fromLocation'));
+    }
+
+    public function shippingDriverDepartureUpdate(Request $request, $delivery_number)
+    {
+        $shipping = Shipping::where('delivery_number', $delivery_number)->firstOrFail();
+
+        $now = now();
+
+        $shipping->departure_time = $now;
+        $shipping->delivery_status = 'On Track';
+
+        $rentals = Rentals::whereIn('id', json_decode($shipping->rental_id, true) ?? [])->get();
+
+        foreach ($rentals as $rental) {
+            $movements = StockMovement::whereIn('id', json_decode($rental->movement_id, true) ?? [])->get();
+            foreach ($movements as $movement) {
+                $movement->movement_type = 'Shipping';
+                $movement->save();
+            }
+            $rental->rental_status = 'On Track';
+            $rental->save();
+        }
+
+        $shipping->save();
+
+        return redirect()->route('shipping.driver.arrival', $delivery_number)->with('success', 'Departure confirmed! Delivery is now in On Track.');
+    }
+
+    public function shippingDriverArrival($delivery_number)
+    {
+        $shipping = Shipping::where('delivery_number', $delivery_number)->firstOrFail();
+
+        // Kalau belum departure, redirect ke departure dulu
+        if (!$shipping->departure_time) {
+            return redirect()->route('shipping.driver.departure', $delivery_number);
+        }
+
+        $driver = Driver::find($shipping->driver_id);
+
+        $rentalIds = is_array($shipping->rental_id) ? $shipping->rental_id : json_decode($shipping->rental_id, true) ?? [];
+
+        $rentals = Rentals::with('customer')->whereIn('id', $rentalIds)->get()->keyBy('id');
+        $warehouses = Warehouse::all()->keyBy('id');
+
+        $allMovIds = [];
+        foreach ($rentals as $r) {
+            $ids = json_decode($r->movement_id, true) ?? [];
+            $allMovIds = array_merge($allMovIds, $ids);
+        }
+        $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovIds))->get()->keyBy('id');
+
+        return view('shipping.driver.driverArrival', compact('shipping', 'driver', 'rentals', 'warehouses', 'movements'));
+    }
+
+    public function shippingDriverArrivalUpdate(Request $request, $delivery_number)
+    {
+        $request->validate([
+            'proof_image' => 'required|image|max:5120',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $shipping = Shipping::where('delivery_number', $delivery_number)->firstOrFail();
+
+        // Upload proof image
+        $path = $request->file('proof_image')->store('delivery-proofs', 'public');
+
+        $shipping->actual_arrival_time = now();
+        $shipping->delivery_status = 'Delivered';
+        $shipping->proof_image_url = $path;
+        $shipping->notes = $request->notes;
+
+        $rentals = Rentals::whereIn('id', json_decode($shipping->rental_id, true) ?? [])->get();
+
+        foreach ($rentals as $rental) {
+            $movements = StockMovement::whereIn('id', json_decode($rental->movement_id, true) ?? [])->get();
+            foreach ($movements as $movement) {
+                $movement->movement_type = 'Arrived';
+                $movement->save();
+            }
+            $rental->rental_status = 'Delivered';
+            $rental->save();
+        }
+
+        $shipping->save();
+
+        return redirect()->route('shipping.driver', $shipping->driver_id)->with('success', 'Delivery completed successfully!');
     }
 }

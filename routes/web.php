@@ -95,6 +95,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/shipping/form', [ShippingController::class, 'shippingForm'])->name('shipping.form');
     Route::post('/shipping/create/post', [ShippingController::class, 'shippingStore'])->name('shipping.store');
 
+    Route::get('/shipping/driver/{id}', [ShippingController::class, 'shippingDriver'])->name('shipping.driver');
+    Route::get('/shipping/driver/departure/{delivery_number}', [ShippingController::class, 'shippingDriverDeparture'])->name('shipping.driver.departure');
+    Route::put('/shipping/driver/departure/update/{delivery_number}', [ShippingController::class, 'shippingDriverDepartureUpdate'])->name('shipping.driver.departure.update');
+    Route::get('/shipping/driver/arrival/{delivery_number}', [ShippingController::class, 'shippingDriverArrival'])->name('shipping.driver.arrival');
+    Route::put('/shipping/driver/arrival/update/{delivery_number}', [ShippingController::class, 'shippingDriverArrivalUpdate'])->name('shipping.driver.arrival.update');
+
     Route::get('/monitoring/active', [MonitoringController::class, 'monitoringActive'])->name('monitoring.active');
 
     Route::get('/return', [ReturnsController::class, 'returnsTools'])->name('returns.tools');
