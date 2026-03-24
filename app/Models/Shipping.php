@@ -9,4 +9,9 @@ class Shipping extends Model
 {
     /** @use HasFactory<\Database\Factories\ShippingFactory> */
     use HasFactory;
+
+    protected $table = 'shippings';
+    protected $primaryKey = 'id'; // 🔥 wajib
+    public $incrementing = false; // karena UUID
+    protected $keyType = 'string';
 }

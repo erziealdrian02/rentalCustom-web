@@ -91,9 +91,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/transactions/rentals/post', [RentalsController::class, 'rentalStore'])->name('transactions.rentals.store');
     Route::get('/transactions/rentals/detail/{id}', [RentalsController::class, 'show'])->name('transactions.rentals.show');
 
-    Route::get('/shipping/list', [ShippingController::class, 'list'])->name('shipping.list');
-    Route::get('/shipping/create', [ShippingController::class, 'form'])->name('shipping.form');
-    Route::post('/shipping/create/post', [ShippingController::class, 'store'])->name('shipping.store');
+    Route::get('/shipping/list', [ShippingController::class, 'shippingList'])->name('shipping.list');
+    Route::get('/shipping/form', [ShippingController::class, 'shippingForm'])->name('shipping.form');
+    Route::post('/shipping/create/post', [ShippingController::class, 'shippingStore'])->name('shipping.store');
 
     Route::get('/monitoring/active', [MonitoringController::class, 'monitoringActive'])->name('monitoring.active');
 
