@@ -100,6 +100,62 @@
                 </tbody>
             </table>
         </div>
+        <div
+            class="px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-200 bg-white">
+
+            {{-- Kiri: Per Page Selector + Info --}}
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span>Show</span>
+                <form method="GET" action="{{ route('transactions.rentals') }}" id="per-page-form">
+                    <select name="per_page" onchange="document.getElementById('per-page-form').submit()"
+                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        @foreach ([10, 50, 100] as $size)
+                            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                                {{ $size }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+                <span>entries</span>
+                <span class="text-gray-400">
+                    &mdash; Showing {{ $rentals->firstItem() }}-{{ $rentals->lastItem() }} of
+                    {{ $rentals->total() }}
+                </span>
+            </div>
+
+            {{-- Kanan: Pagination custom (tanpa teks "Showing X to Y") --}}
+            <div class="flex items-center gap-1">
+                {{-- Prev --}}
+                @if ($rentals->onFirstPage())
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">‹</span>
+                @else
+                    <a href="{{ $rentals->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">‹</a>
+                @endif
+
+                {{-- Page Numbers --}}
+                @foreach ($rentals->getUrlRange(1, $rentals->lastPage()) as $page => $url)
+                    @if ($page == $rentals->currentPage())
+                        <span
+                            class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white font-semibold">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}&per_page={{ request('per_page', 10) }}"
+                            class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">{{ $page }}</a>
+                    @endif
+                @endforeach
+
+                {{-- Next --}}
+                @if ($rentals->hasMorePages())
+                    <a href="{{ $rentals->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">›</a>
+                @else
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">›</span>
+                @endif
+            </div>
+
+        </div>
     </div>
 
     {{-- Modal --}}
@@ -183,13 +239,9 @@
 
     {{-- Data JSON untuk modal (embed sekali, tidak ada JS yang generate tabel) --}}
     <script>
-        // const rentalsData = @json($rentals->items());
-        // const customersById = @json($customersById);
-        // const movementsByRentalId = @json($movementsByRentalId); // <-- tambah ini
-
-        const rentalsData = JSON.parse(atob('{{ base64_encode(json_encode(array_values($rentals->items()))) }}'));
-        const customersById = JSON.parse(atob('{{ base64_encode(json_encode($customersById)) }}'));
-        const movementsByRentalId = JSON.parse(atob('{{ base64_encode(json_encode($movementsByRentalId)) }}'));
+        const rentalsData = @json($rentals->items());
+        const customersById = @json($customersById);
+        const movementsByRentalId = @json($movementsByRentalId);
 
         console.log(JSON.parse(atob('{{ base64_encode(json_encode($movementsByRentalId)) }}')));
 

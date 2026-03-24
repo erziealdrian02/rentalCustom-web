@@ -141,6 +141,7 @@ class RentalsController extends Controller
         $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
 
         $customers = Customers::all();
+        $allRentals = Rentals::all();
         $rentals = Rentals::with('customer')->paginate($perPage);
 
         // Kumpulkan semua movement_id dari semua rental
@@ -154,10 +155,10 @@ class RentalsController extends Controller
         $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovementIds))->get()->keyBy('id');
 
         // Hitung summary
-        $totalRentals = $rentals->total();
-        $activeRentals = collect($rentals->items())->where('rental_status', 'Pending')->count();
-        $completedRentals = collect($rentals->items())->where('payment_status', 'paid')->count();
-        $totalRevenue = collect($rentals->items())->sum('total_price');
+        $totalRentals = $allRentals->count();
+        $activeRentals = $allRentals->where('rental_status', 'Pending')->count();
+        $completedRentals = $allRentals->where('payment_status', 'paid')->count();
+        $totalRevenue = $allRentals->sum('total_price');
 
         // Buat lookup customers by id untuk modal
         $customersById = [];
