@@ -8,6 +8,7 @@ use App\Models\Shipping;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ShippingController extends Controller
@@ -237,16 +238,23 @@ class ShippingController extends Controller
     {
         $driver = Driver::findOrFail($id);
 
-        // Ambil semua shipping yang driver_id-nya sama
-        $shippings = Shipping::where('driver_id', $id)
-            ->whereIn('delivery_status', ['On Track', 'Pending', 'Delivered']) // filter hanya status yang relevan
+        // Active: pending & in_transit
+        $activeShippings = Shipping::where('driver_id', $id)
+            ->whereIn('delivery_status', ['pending', 'in_transit'])
+            ->orderBy('created_at', 'desc')
             ->get();
 
-        // dd($driver, $shippings);
+        // History: delivered, failed, cancelled
+        $historyShippings = Shipping::where('driver_id', $id)
+            ->whereIn('delivery_status', ['delivered', 'failed', 'cancelled'])
+            ->orderBy('actual_arrival_time', 'desc')
+            ->get();
 
-        // Resolve rental & warehouse data
+        $allShippings = $activeShippings->merge($historyShippings);
+
+        // Resolve rentals
         $allRentalIds = [];
-        foreach ($shippings as $shipping) {
+        foreach ($allShippings as $shipping) {
             $ids = is_array($shipping->rental_id) ? $shipping->rental_id : json_decode($shipping->rental_id, true) ?? [];
             $allRentalIds = array_merge($allRentalIds, $ids);
         }
@@ -254,7 +262,6 @@ class ShippingController extends Controller
         $rentals = Rentals::with('customer')->whereIn('id', array_unique($allRentalIds))->get()->keyBy('id');
         $warehouses = Warehouse::all()->keyBy('id');
 
-        // Movements
         $allMovIds = [];
         foreach ($rentals as $r) {
             $ids = json_decode($r->movement_id, true) ?? [];
@@ -262,7 +269,7 @@ class ShippingController extends Controller
         }
         $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovIds))->get()->keyBy('id');
 
-        return view('shipping.driver.driverShippingList', compact('driver', 'shippings', 'rentals', 'warehouses', 'movements'));
+        return view('shipping.driver.driverShippingList', compact('driver', 'activeShippings', 'historyShippings', 'rentals', 'warehouses', 'movements'));
     }
 
     public function shippingDriverDeparture($delivery_number)
@@ -371,5 +378,52 @@ class ShippingController extends Controller
         $shipping->save();
 
         return redirect()->route('shipping.driver', $shipping->driver_id)->with('success', 'Delivery completed successfully!');
+    }
+
+    public function shippingDriverHistoryDetail($id, $delivery_number)
+    {
+        $driver = Driver::findOrFail($id);
+        $shipping = Shipping::where('delivery_number', $delivery_number)->where('driver_id', $id)->firstOrFail();
+
+        $rentalIds = is_array($shipping->rental_id) ? $shipping->rental_id : json_decode($shipping->rental_id, true) ?? [];
+
+        $rentals = Rentals::with('customer')->whereIn('id', $rentalIds)->get()->keyBy('id');
+        $warehouses = Warehouse::all()->keyBy('id');
+
+        $allMovIds = [];
+        foreach ($rentals as $r) {
+            $ids = json_decode($r->movement_id, true) ?? [];
+            $allMovIds = array_merge($allMovIds, $ids);
+        }
+        $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovIds))->get()->keyBy('id');
+
+        $fromLocation = is_array($shipping->from_location) ? $shipping->from_location : json_decode($shipping->from_location, true) ?? [];
+
+        return view('shipping.driver.driverHistoryDetail', compact('driver', 'shipping', 'rentals', 'warehouses', 'movements', 'fromLocation'));
+    }
+
+    public function shippingDriverReupload(Request $request, $id, $delivery_number)
+    {
+        $shipping = Shipping::where('delivery_number', $delivery_number)->firstOrFail();
+        // dd($shipping);
+
+        // Hapus file lama kalau ada
+        if ($shipping->proof_image_url && Storage::disk('public')->exists($shipping->proof_image_url)) {
+            Storage::disk('public')->delete($shipping->proof_image_url);
+        }
+
+        $path = $request->file('proof_image')->store('delivery-proofs', 'public');
+
+        $shipping->proof_image_url = $path;
+        $shipping->notes = $request->notes ?? $shipping->notes;
+        
+        $shipping->save();
+
+        return redirect()
+            ->route('shipping.driver.history', [
+                'id' => $id,
+                'delivery_number' => $delivery_number,
+            ])
+            ->with('success', 'Bukti pengiriman berhasil diperbarui.');
     }
 }

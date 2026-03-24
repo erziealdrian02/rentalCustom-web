@@ -100,6 +100,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/shipping/driver/departure/update/{delivery_number}', [ShippingController::class, 'shippingDriverDepartureUpdate'])->name('shipping.driver.departure.update');
     Route::get('/shipping/driver/arrival/{delivery_number}', [ShippingController::class, 'shippingDriverArrival'])->name('shipping.driver.arrival');
     Route::put('/shipping/driver/arrival/update/{delivery_number}', [ShippingController::class, 'shippingDriverArrivalUpdate'])->name('shipping.driver.arrival.update');
+    Route::get('/shipping/driver/{id}/history/{delivery_number}', [ShippingController::class, 'shippingDriverHistoryDetail'])->name('shipping.driver.history');
+    Route::put('/shipping/driver/{id}/reupload/{delivery_number}', [ShippingController::class, 'shippingDriverReupload'])->name('shipping.driver.reupload');
 
     Route::get('/monitoring/active', [MonitoringController::class, 'monitoringActive'])->name('monitoring.active');
 
