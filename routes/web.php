@@ -88,12 +88,20 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/transactions/rentals', [RentalsController::class, 'rental'])->name('transactions.rentals');
     Route::get('/transactions/rentals/form', [RentalsController::class, 'rentalForm'])->name('transactions.rentals.form');
-    Route::post('/transactions/rentals/post', [RentalsController::class, 'store'])->name('transactions.rentals.store');
+    Route::post('/transactions/rentals/post', [RentalsController::class, 'rentalStore'])->name('transactions.rentals.store');
     Route::get('/transactions/rentals/detail/{id}', [RentalsController::class, 'show'])->name('transactions.rentals.show');
 
-    Route::get('/shipping/list', [ShippingController::class, 'list'])->name('shipping.list');
-    Route::get('/shipping/create', [ShippingController::class, 'form'])->name('shipping.form');
-    Route::post('/shipping/create/post', [ShippingController::class, 'store'])->name('shipping.store');
+    Route::get('/shipping/list', [ShippingController::class, 'shippingList'])->name('shipping.list');
+    Route::get('/shipping/form', [ShippingController::class, 'shippingForm'])->name('shipping.form');
+    Route::post('/shipping/create/post', [ShippingController::class, 'shippingStore'])->name('shipping.store');
+
+    Route::get('/shipping/driver/{id}', [ShippingController::class, 'shippingDriver'])->name('shipping.driver');
+    Route::get('/shipping/driver/departure/{delivery_number}', [ShippingController::class, 'shippingDriverDeparture'])->name('shipping.driver.departure');
+    Route::put('/shipping/driver/departure/update/{delivery_number}', [ShippingController::class, 'shippingDriverDepartureUpdate'])->name('shipping.driver.departure.update');
+    Route::get('/shipping/driver/arrival/{delivery_number}', [ShippingController::class, 'shippingDriverArrival'])->name('shipping.driver.arrival');
+    Route::put('/shipping/driver/arrival/update/{delivery_number}', [ShippingController::class, 'shippingDriverArrivalUpdate'])->name('shipping.driver.arrival.update');
+    Route::get('/shipping/driver/{id}/history/{delivery_number}', [ShippingController::class, 'shippingDriverHistoryDetail'])->name('shipping.driver.history');
+    Route::put('/shipping/driver/{id}/reupload/{delivery_number}', [ShippingController::class, 'shippingDriverReupload'])->name('shipping.driver.reupload');
 
     Route::get('/monitoring/active', [MonitoringController::class, 'monitoringActive'])->name('monitoring.active');
 

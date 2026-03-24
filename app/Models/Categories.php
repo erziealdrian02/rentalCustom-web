@@ -11,13 +11,10 @@ class Categories extends Model
     use HasFactory;
 
     protected $table = 'tool_categories';
-
     protected $primaryKey = 'id'; // 🔥 wajib
-
     public $incrementing = false; // karena UUID
-
     protected $keyType = 'string';
-
+    
     protected $fillable = ['name', 'description'];
 
     public function tools()

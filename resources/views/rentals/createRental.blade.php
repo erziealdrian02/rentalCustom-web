@@ -6,6 +6,8 @@
     <script>
         const pricingMap = @json($pricingMap);
         {{-- { toolId: { dailyRate, weeklyRate, monthlyRate } } --}}
+
+        console.log('Pricing Map:', pricingMap);
     </script>
 
     {{-- Error validasi --}}
@@ -61,7 +63,7 @@
                                         onchange="updateDailyRate()">
                                         <option value="">Select Tool</option>
                                         @foreach ($getTools as $tool)
-                                            <option value="{{ $tool['id'] }}">{{ $tool['name'] }} ({{ $tool['code'] }})
+                                            <option value="{{ $tool['id_tools'] }}">{{ $tool['name'] }} ({{ $tool['code_tools'] }})
                                             </option>
                                         @endforeach
                                     </select>
@@ -155,7 +157,7 @@
 
         // ─── Update rate berdasarkan tool + duration type ────────
         function updateDailyRate() {
-            const toolId = parseInt(document.getElementById('toolId').value);
+            const toolId = document.getElementById('toolId').value;
             const durationType = document.getElementById('durationType').value;
             const pricing = pricingMap[toolId];
 
@@ -181,7 +183,7 @@
 
         // ─── Tambah item ke rental ───────────────────────────────
         function addRentalItem() {
-            const toolId = parseInt(document.getElementById('toolId').value);
+            const toolId = document.getElementById('toolId').value;
             const quantity = parseInt(document.getElementById('quantity').value) || 1;
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
@@ -338,5 +340,51 @@
 
             document.getElementById('rental-form').submit();
         }
+
+        let CustomersChoice = null;
+        let toolsChoices = null;
+
+        function initCustomersChoice() {
+            const el = document.getElementById('customerId');
+            if (CustomersChoice) {
+                CustomersChoice.destroy();
+            }
+            CustomersChoice = new Choices(el, {
+                searchEnabled: true,
+                searchPlaceholderValue: 'Cari customer...',
+                itemSelectText: '',
+                noResultsText: 'Customer tidak ditemukan',
+                shouldSort: false,
+            });
+
+            // Gunakan event dari Choices, bukan onchange native
+            el.addEventListener('change', function() {
+                updateSubmitBtn();
+            });
+        }
+
+        function initToolsChoices() {
+            const el = document.getElementById('toolId');
+            if (toolsChoices) {
+                toolsChoices.destroy();
+            }
+            toolsChoices = new Choices(el, {
+                searchEnabled: true,
+                searchPlaceholderValue: 'Cari tools...',
+                itemSelectText: '',
+                noResultsText: 'Tools tidak ditemukan',
+                shouldSort: false,
+            });
+
+            // Gunakan event dari Choices, bukan onchange native
+            el.addEventListener('change', function() {
+                onToolChange();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initCustomersChoice();
+            initToolsChoices();
+        });
     </script>
 @endsection

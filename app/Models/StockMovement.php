@@ -18,7 +18,7 @@ class StockMovement extends Model
 
     public function tool()
     {
-        return $this->belongsTo(Tools::class, 'tool_id', 'id_tools');
+        return $this->belongsTo(Tools::class, 'tool_id');
     }
 
     public function warehouse()

@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Rentals;
+use App\Models\Shipping;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class MonitoringController extends Controller
 {
@@ -60,24 +64,106 @@ class MonitoringController extends Controller
         ]);
     }
 
+    private const ACTIVE_STATUSES = ['Pending', 'Delivered', 'On Track', 'Overdue', 'Returning', 'On Check', 'Waiting'];
+
+    // ── Monitoring page ─────────────────────────────────────────
     public function monitoringActive()
     {
-        $allRentals = $this->getRentals();
+        // 1. Ambil semua rental aktif + eager-load customer
+        $rawRentals = Rentals::with('customer')
+            ->whereIn('rental_status', ['Delivered', 'On Track'])
+            ->orderBy('rental_end_date')
+            ->get();
 
-        // Hanya tampilkan yang bukan On Check
-        $rentals = array_values(array_filter($allRentals, fn($r) => ($r['rentalStatus'] ?? '') !== 'On Check'));
-
-        // Hitung days remaining tiap rental
-        foreach ($rentals as &$rental) {
-            $end = \Carbon\Carbon::parse($rental['rentalEndDate']);
-            $rental['daysRemaining'] = (int) now()->startOfDay()->diffInDays($end->startOfDay(), false);
-            $rental['totalRevenue'] = array_sum(array_column($rental['items'], 'subtotal'));
-
-            $start = \Carbon\Carbon::parse($rental['rentalStartDate']);
-            $totalDays = max(1, $start->diffInDays($end));
-            $rental['dailyAverage'] = $rental['totalRevenue'] / $totalDays;
+        // 2. Kumpulkan semua movement IDs dari seluruh rental
+        $allMovementIds = [];
+        foreach ($rawRentals as $rental) {
+            $ids = json_decode($rental->movement_id, true) ?? [];
+            $allMovementIds = array_merge($allMovementIds, $ids);
         }
-        unset($rental);
+
+        // 3. Fetch semua movements + tools sekaligus (N+1 prevention)
+        $movements = StockMovement::whereIn('id', $allMovementIds)->with('tool')->get()->keyBy('id');
+
+        // 4. Fetch semua shipping lalu index by rental_id
+        $allShippings = Shipping::with('driver')->get();
+
+        $shippingByRental = [];
+        foreach ($allShippings as $shipping) {
+            $rentalIdsInShipping = json_decode($shipping->rental_id, true) ?? [];
+            foreach ($rentalIdsInShipping as $rId) {
+                $shippingByRental[$rId] = $shipping;
+            }
+        }
+
+        // 5. Format data untuk view
+        $rentals = $rawRentals->map(function ($rental) use ($movements, $shippingByRental) {
+            $today = \Carbon\Carbon::today();
+            $endDate = \Carbon\Carbon::parse($rental->rental_end_date);
+            $daysRemaining = $today->diffInDays($endDate, false); // negatif jika overdue
+
+            // Ambil movement IDs milik rental ini
+            $movementIds = json_decode($rental->movement_id, true) ?? [];
+
+            // Build items array
+            $items = [];
+            foreach ($movementIds as $mId) {
+                $movement = $movements->get($mId);
+                if (!$movement || !$movement->tool) {
+                    continue;
+                }
+
+                $tool = $movement->tool;
+                $qty = $movement->quantity;
+
+                // Hitung durasi sewa dalam hari
+                $startDate = \Carbon\Carbon::parse($rental->rental_start_date);
+                $rentalDays = max(1, $startDate->diffInDays($endDate));
+
+                $dailyRate = $tool->daily_rate ?? 0;
+                $subtotal = $dailyRate * $qty * $rentalDays;
+
+                $items[] = [
+                    'toolName' => $tool->name,
+                    'quantity' => $qty,
+                    'dailyRate' => $dailyRate,
+                    'subtotal' => $subtotal,
+                ];
+            }
+
+            $totalRevenue = collect($items)->sum('subtotal');
+            $startDate = \Carbon\Carbon::parse($rental->rental_start_date);
+            $rentalDays = max(1, $startDate->diffInDays($endDate));
+            $dailyAverage = $rentalDays > 0 ? $totalRevenue / $rentalDays : 0;
+
+            // Shipping / driver info
+            $shipping = $shippingByRental[$rental->id] ?? null;
+
+            return [
+                'id' => $rental->id,
+                'invoiceNumber' => $rental->invoice_number,
+                'customerName' => $rental->customer->name ?? '-',
+                'rentalStartDate' => $rental->rental_start_date,
+                'rentalEndDate' => $rental->rental_end_date,
+                'daysRemaining' => (int) $daysRemaining,
+                'rentalStatus' => $rental->rental_status,
+                'paymentStatus' => $rental->payment_status,
+                'totalRevenue' => $totalRevenue,
+                'dailyAverage' => $dailyAverage,
+                'createdDate' => $rental->created_at,
+                'notes' => $rental->notes,
+                'items' => $items,
+
+                // Delivery info (dari shipping)
+                'driverName' => $shipping?->driver?->name,
+                'deliveryNumber' => $shipping?->delivery_number,
+                'deliveryLocation' => $shipping?->to_location,
+                'deliveryStatus' => $shipping?->delivery_status,
+                'estimatedDeliveryTime' => $shipping?->estimated_arrival_time ? \Carbon\Carbon::parse($shipping->estimated_arrival_time)->format('d M Y, H:i') : null,
+                'actualDeliveryTime' => $shipping?->actual_arrival_time ? \Carbon\Carbon::parse($shipping->actual_arrival_time)->format('d M Y, H:i') : null,
+                'departureTime' => $shipping?->departure_time ? \Carbon\Carbon::parse($shipping->departure_time)->format('d M Y, H:i') : null,
+            ];
+        });
 
         return view('monitoring.activeMonitoring', compact('rentals'));
     }
