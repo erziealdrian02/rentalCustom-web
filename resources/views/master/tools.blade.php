@@ -26,27 +26,86 @@
         </button>
     </div>
 
+    {{-- Search Bar --}}
+    <div class="mb-4">
+        <form method="GET" action="{{ route('master.tools') }}" id="search-form">
+            <input type="hidden" name="per_page" value="{{ request('per_page', 10) }}">
+            <input type="hidden" name="sort_by" value="{{ request('sort_by', 'code_tools') }}">
+            <input type="hidden" name="sort_dir" value="{{ request('sort_dir', 'asc') }}">
+
+            <div class="relative max-w-sm">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+                <input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Search by name, code, or serial..."
+                    class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    oninput="debounceSearch(this.form)">
+            </div>
+        </form>
+    </div>
+
     {{-- Tabel --}}
     <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Code</th>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Name</th>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Category</th>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Serial Number</th>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Value</th>
-                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
+                        @php
+                            $sortBy = request('sort_by', 'code_tools');
+                            $sortDir = request('sort_dir', 'asc');
+
+                            $columns = [
+                                'code_tools' => 'Code',
+                                'name' => 'Name',
+                                'category' => 'Category',
+                                'serial_number' => 'Serial Number',
+                                'replacement_value' => 'Value',
+                                'status' => 'Status',
+                            ];
+                        @endphp
+
+                        @foreach ($columns as $col => $label)
+                            @php
+                                $isSorted = $sortBy === $col;
+                                $nextDir = $isSorted && $sortDir === 'asc' ? 'desc' : 'asc';
+                                $sortUrl = route(
+                                    'master.tools',
+                                    array_merge(request()->except('page'), [
+                                        'sort_by' => $col,
+                                        'sort_dir' => $nextDir,
+                                    ]),
+                                );
+                            @endphp
+                            <th class="px-6 py-3 text-left">
+                                <a href="{{ $sortUrl }}"
+                                    class="inline-flex items-center gap-1 font-semibold text-gray-700 hover:text-blue-600 transition select-none group">
+                                    {{ $label }}
+                                    <span class="flex flex-col leading-none text-gray-400 group-hover:text-blue-500">
+                                        {{-- Arrow up --}}
+                                        <svg class="w-3 h-3 -mb-0.5 {{ $isSorted && $sortDir === 'asc' ? 'text-blue-600' : '' }}"
+                                            viewBox="0 0 10 6" fill="currentColor">
+                                            <path d="M5 0L10 6H0z" />
+                                        </svg>
+                                        {{-- Arrow down --}}
+                                        <svg class="w-3 h-3 {{ $isSorted && $sortDir === 'desc' ? 'text-blue-600' : '' }}"
+                                            viewBox="0 0 10 6" fill="currentColor">
+                                            <path d="M5 6L0 0H10z" />
+                                        </svg>
+                                    </span>
+                                </a>
+                            </th>
+                        @endforeach
+
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($tools as $tool)
-                    {{-- {{ dd($tools->first()) }} --}}
                         @php
                             $status = ucfirst($tool->status);
-
                             $statusColor = match ($status) {
                                 'Available' => 'bg-green-100 text-green-700',
                                 'Rented' => 'bg-blue-100 text-blue-700',
@@ -63,18 +122,15 @@
                             <td class="px-6 py-4">${{ number_format($tool->replacement_value) }}</td>
                             <td class="px-6 py-4">
                                 <span class="px-2 py-1 text-xs font-semibold rounded {{ $statusColor }}">
-                                    {{ $status = ucfirst($tool->status) }}
+                                    {{ $status }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex gap-2">
-                                    {{-- Tombol Edit --}}
                                     <button onclick="openModal({{ json_encode($tool) }})"
                                         class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">
                                         Edit
                                     </button>
-
-                                    {{-- Tombol Delete --}}
                                     <form method="POST" action="{{ route('tools.destroy', $tool['id_tools']) }}"
                                         onsubmit="return confirm('Yakin ingin menghapus tool ini?')">
                                         @csrf
@@ -95,14 +151,18 @@
                 </tbody>
             </table>
         </div>
-        {{-- Footer Tabel: Per Page + Pagination --}}
+
+        {{-- Footer: Per Page + Pagination --}}
         <div
             class="px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-200 bg-white">
 
-            {{-- Kiri: Per Page Selector + Info --}}
+            {{-- Kiri: Per Page + Info --}}
             <div class="flex items-center gap-2 text-sm text-gray-600">
                 <span>Show</span>
                 <form method="GET" action="{{ route('master.tools') }}" id="per-page-form">
+                    <input type="hidden" name="search" value="{{ request('search') }}">
+                    <input type="hidden" name="sort_by" value="{{ request('sort_by', 'code_tools') }}">
+                    <input type="hidden" name="sort_dir" value="{{ request('sort_dir', 'asc') }}">
                     <select name="per_page" onchange="document.getElementById('per-page-form').submit()"
                         class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         @foreach ([10, 50, 100] as $size)
@@ -118,38 +178,34 @@
                 </span>
             </div>
 
-            {{-- Kanan: Pagination custom (tanpa teks "Showing X to Y") --}}
+            {{-- Kanan: Pagination --}}
             <div class="flex items-center gap-1">
-                {{-- Prev --}}
                 @if ($tools->onFirstPage())
                     <span
                         class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">‹</span>
                 @else
-                    <a href="{{ $tools->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                    <a href="{{ $tools->previousPageUrl() }}&per_page={{ request('per_page', 10) }}&search={{ request('search') }}&sort_by={{ request('sort_by', 'code_tools') }}&sort_dir={{ request('sort_dir', 'asc') }}"
                         class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">‹</a>
                 @endif
 
-                {{-- Page Numbers --}}
                 @foreach ($tools->getUrlRange(1, $tools->lastPage()) as $page => $url)
                     @if ($page == $tools->currentPage())
                         <span
                             class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white font-semibold">{{ $page }}</span>
                     @else
-                        <a href="{{ $url }}&per_page={{ request('per_page', 10) }}"
+                        <a href="{{ $url }}&per_page={{ request('per_page', 10) }}&search={{ request('search') }}&sort_by={{ request('sort_by', 'code_tools') }}&sort_dir={{ request('sort_dir', 'asc') }}"
                             class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">{{ $page }}</a>
                     @endif
                 @endforeach
 
-                {{-- Next --}}
                 @if ($tools->hasMorePages())
-                    <a href="{{ $tools->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                    <a href="{{ $tools->nextPageUrl() }}&per_page={{ request('per_page', 10) }}&search={{ request('search') }}&sort_by={{ request('sort_by', 'code_tools') }}&sort_dir={{ request('sort_dir', 'asc') }}"
                         class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">›</a>
                 @else
                     <span
                         class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">›</span>
                 @endif
             </div>
-
         </div>
     </div>
 
@@ -166,12 +222,10 @@
                 </button>
             </div>
 
-            {{-- Form dinamis: POST untuk add, PUT untuk edit --}}
             <form id="tool-form" method="POST" action="{{ route('tools.store') }}" class="space-y-4">
                 @csrf
                 <span id="method-field"></span>
-
-                <input type="" id="tool-id" name="tool_id" value="">
+                <input type="hidden" id="tool-id" name="tool_id" value="">
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tool Name</label>
@@ -217,19 +271,25 @@
     </div>
 
     <script>
+        // Debounce search: auto-submit setelah 400ms berhenti ngetik
+        let searchTimeout;
+
+        function debounceSearch(form) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => form.submit(), 400);
+        }
+
         function openModal(tool = null) {
             const modal = document.getElementById('tool-modal');
             const form = document.getElementById('tool-form');
             const title = document.getElementById('modal-title');
             const methodEl = document.getElementById('method-field');
 
-            // Reset form
             form.reset();
             document.getElementById('tool-id').value = '';
             methodEl.innerHTML = '';
 
             if (tool) {
-                // Mode Edit
                 title.textContent = `Edit Tool ${tool.code_tools}`;
                 form.action = `/master/tools/update/${tool.id_tools}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
@@ -238,11 +298,9 @@
                 document.getElementById('f-name').value = tool.name;
                 document.getElementById('f-replacementValue').value = tool.replacement_value;
 
-                // Set select values
                 setSelect('f-category', tool.category_id);
                 setSelect('f-status', tool.status);
             } else {
-                // Mode Add
                 title.textContent = 'Add Tool';
                 form.action = "{{ route('tools.store') }}";
             }
@@ -261,7 +319,6 @@
             }
         }
 
-        // Tutup modal klik luar
         document.getElementById('tool-modal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
