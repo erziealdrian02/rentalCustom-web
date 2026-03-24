@@ -11,22 +11,6 @@ use Illuminate\Support\Str;
 
 class StockController extends Controller
 {
-    private function getMovements()
-    {
-        return session('stock_movement', [
-            ['id' => 1, 'date' => '2025-01-15', 'toolName' => 'Angle Grinder', 'warehouseName' => 'Warehouse Alpha', 'type' => 'IN', 'quantity' => 10, 'reference' => 'PO-001'],
-            ['id' => 2, 'date' => '2025-01-16', 'toolName' => 'Hammer', 'warehouseName' => 'Warehouse Alpha', 'type' => 'IN', 'quantity' => 20, 'reference' => 'PO-002'],
-            ['id' => 3, 'date' => '2025-01-17', 'toolName' => 'Safety Helmet', 'warehouseName' => 'Warehouse Beta', 'type' => 'RENT', 'quantity' => 3, 'reference' => 'RNT-001'],
-            ['id' => 4, 'date' => '2025-01-18', 'toolName' => 'Drill Machine', 'warehouseName' => 'Warehouse Beta', 'type' => 'OUT', 'quantity' => 2, 'reference' => 'OUT-001'],
-            ['id' => 5, 'date' => '2025-01-19', 'toolName' => 'Screwdriver', 'warehouseName' => 'Warehouse Gamma', 'type' => 'RETURN', 'quantity' => 5, 'reference' => 'RET-001'],
-            ['id' => 6, 'date' => '2025-01-20', 'toolName' => 'Wrench Set', 'warehouseName' => 'Warehouse Gamma', 'type' => 'DAMAGED', 'quantity' => 1, 'reference' => 'DMG-001'],
-            ['id' => 7, 'date' => '2025-01-21', 'toolName' => 'Measuring Tape', 'warehouseName' => 'Warehouse Delta', 'type' => 'IN', 'quantity' => 8, 'reference' => 'PO-003'],
-            ['id' => 8, 'date' => '2025-01-22', 'toolName' => 'Ladder', 'warehouseName' => 'Warehouse Epsilon', 'type' => 'LOST', 'quantity' => 1, 'reference' => 'LST-001'],
-            ['id' => 9, 'date' => '2025-01-23', 'toolName' => 'Angle Grinder', 'warehouseName' => 'Warehouse Alpha', 'type' => 'RENT', 'quantity' => 2, 'reference' => 'RNT-002'],
-            ['id' => 10, 'date' => '2025-01-24', 'toolName' => 'Hammer', 'warehouseName' => 'Warehouse Alpha', 'type' => 'RETURN', 'quantity' => 4, 'reference' => 'RET-002'],
-        ]);
-    }
-
     public function overview(Request $request)
     {
         $warehouses = Warehouse::all();
@@ -117,27 +101,28 @@ class StockController extends Controller
 
         // Insert semua items
         foreach ($items as $item) {
+            $warehouse->used_stock += $item['quantity'];
             // dd($uuid);
             $movement = new StockMovement();
             $movement->id = (string) Str::uuid();
             $movement->reference_id = $referenceId;
             $movement->warehouse_id = $request->warehouse_id;
             $movement->tool_id = $item['toolId'];
-            $movement->movement_type = 'PENDING';
+            $movement->movement_type = 'Arrived';
             $movement->stock_type = 'IN';
             $movement->quantity = $item['quantity'];
             $movement->notes = $request->notes;
             $movement->created_by = auth()->id();
-
-            $movement->save();
 
             $stock = new Stock();
             $stock->id = (string) Str::uuid();
             $stock->warehouse_id = $request->warehouse_id;
             $stock->tool_id = $item['toolId'];
             $stock->quantity = $item['quantity'];
-            $stock->status = 'pending';
+            $stock->status = 'good';
 
+            $warehouse->save();
+            $movement->save();
             $stock->save();
         }
 
