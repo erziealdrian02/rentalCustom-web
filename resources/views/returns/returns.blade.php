@@ -10,24 +10,24 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            Create Rental
+            Create Return
         </a>
     </div>
 
     {{-- Summary Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 mb-8">
         <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-            <p class="text-gray-600 text-sm font-medium">Total Rentals</p>
-            <p class="text-3xl font-bold text-gray-900 mt-2">{{ $totalRentals }}</p>
+            <p class="text-gray-600 text-sm font-medium">Total Returning</p>
+            <p class="text-3xl font-bold text-gray-900 mt-2">{{ $totalReturn }}</p>
         </div>
-        <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-            <p class="text-gray-600 text-sm font-medium">Active Rentals</p>
+        {{-- <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Total Sold Damaged On Rental</p>
             <p class="text-3xl font-bold text-green-600 mt-2">{{ $activeRentals }}</p>
         </div>
         <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-            <p class="text-gray-600 text-sm font-medium">Completed</p>
+            <p class="text-gray-600 text-sm font-medium">Total Damaged</p>
             <p class="text-3xl font-bold text-blue-600 mt-2">{{ $completedRentals }}</p>
-        </div>
+        </div> --}}
         <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
             <p class="text-gray-600 text-sm font-medium">Total Revenue</p>
             <p class="text-3xl font-bold text-purple-600 mt-2">Rp. {{ number_format($totalRevenue) }}</p>

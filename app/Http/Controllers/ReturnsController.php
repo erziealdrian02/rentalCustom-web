@@ -60,8 +60,8 @@ class ReturnsController extends Controller
         $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
 
         $customers = Customers::all();
-        $allRentals = Rentals::all();
-        $rentals = Rentals::with('customer')->whereNull('return_invoice_number')->where('rental_status', 'Returning')->paginate($perPage);
+        $allReturns = Rentals::whereNotNull('return_invoice_number')->get();
+        $rentals = Rentals::with('customer')->whereNotNull('return_invoice_number')->where('rental_status', 'Returning')->paginate($perPage);
 
         $allMovementIds = [];
         foreach ($rentals->items() as $rental) {
@@ -71,10 +71,10 @@ class ReturnsController extends Controller
 
         $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovementIds))->get()->keyBy('id');
 
-        $totalRentals = $allRentals->count();
-        $activeRentals = $allRentals->where('rental_status', 'Pending')->count();
-        $completedRentals = $allRentals->where('payment_status', 'paid')->count();
-        $totalRevenue = $allRentals->sum('total_price');
+        $totalReturn = $allReturns->count();
+        $activeRentals = $allReturns->where('rental_status', 'Pending')->count();
+        $completedRentals = $allReturns->where('payment_status', 'paid')->count();
+        $totalRevenue = $allReturns->sum('total_price');
 
         // Buat lookup customers by id untuk modal
         $customersById = [];
@@ -89,7 +89,7 @@ class ReturnsController extends Controller
             $movementsByRentalId[$rental->id] = collect($ids)->map(fn($id) => $movements->get($id))->filter()->values();
         }
 
-        return view('returns.returns', compact('rentals', 'customersById', 'movementsByRentalId', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
+        return view('returns.returns', compact('rentals', 'customersById', 'movementsByRentalId', 'totalReturn', 'activeRentals', 'completedRentals', 'totalRevenue'));
     }
 
     public function returnsFrom()
