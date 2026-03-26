@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 
 class SpecialController extends Controller
@@ -25,9 +26,11 @@ class SpecialController extends Controller
         ]);
     }
  
-    public function lostTools()
+    public function lostTools(Request $request)
     {
-        $lostTools = $this->getLostTools();
+        $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
+        $lostTools = StockMovement::where('stock_type', 'LOST')->paginate($perPage);
+
         return view('special.lostTools', compact('lostTools'));
     }
 
