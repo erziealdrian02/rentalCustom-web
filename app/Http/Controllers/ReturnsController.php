@@ -57,14 +57,12 @@ class ReturnsController extends Controller
 
     public function returnsTools(Request $request)
     {
-        $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
-
         $customers = Customers::all();
         $allReturns = Rentals::whereNotNull('return_invoice_number')->get();
-        $rentals = Rentals::with('customer')->whereNotNull('return_invoice_number')->where('rental_status', 'Returning')->paginate($perPage);
+        $rentals = Rentals::with('customer')->whereNotNull('return_invoice_number')->where('rental_status', 'Returning')->get();
 
         $allMovementIds = [];
-        foreach ($rentals->items() as $rental) {
+        foreach ($rentals as $rental) {
             $ids = json_decode($rental->movement_id, true) ?? [];
             $allMovementIds = array_merge($allMovementIds, $ids);
         }
@@ -76,15 +74,13 @@ class ReturnsController extends Controller
         $completedRentals = $allReturns->where('payment_status', 'paid')->count();
         $totalRevenue = $allReturns->sum('total_price');
 
-        // Buat lookup customers by id untuk modal
         $customersById = [];
         foreach ($customers as $c) {
             $customersById[$c->id] = $c;
         }
 
-        // Buat lookup movements by rental id untuk modal
         $movementsByRentalId = [];
-        foreach ($rentals->items() as $rental) {
+        foreach ($rentals as $rental) {
             $ids = json_decode($rental->movement_id, true) ?? [];
             $movementsByRentalId[$rental->id] = collect($ids)->map(fn($id) => $movements->get($id))->filter()->values();
         }
