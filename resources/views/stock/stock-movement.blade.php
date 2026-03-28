@@ -10,9 +10,9 @@
             'RETURN' => 'bg-purple-100 text-purple-800',
             'LOST' => 'bg-red-100 text-red-800',
             'DAMAGED' => 'bg-orange-100 text-orange-800',
-            'WAITING' => 'bg-gray-100 text-gray-800',
+            'Waiting' => 'bg-gray-100 text-gray-800',
             'SHIPPING' => 'bg-blue-100 text-blue-800',
-            'ARRIVED' => 'bg-green-100 text-green-800',
+            'Arrived' => 'bg-green-100 text-green-800',
         ];
 
         $typeIcons = [
@@ -22,9 +22,9 @@
             'RETURN' => '↩️',
             'LOST' => '❌',
             'DAMAGED' => '⚠️',
-            'WAITING' => '⏳',
+            'Waiting' => '⏳',
             'SHIPPING' => '🚚',
-            'ARRIVED' => '✅',
+            'Arrived' => '✅',
         ];
 
         // Tipe yang mengurangi stok (ditampilkan merah dengan tanda minus)
@@ -111,6 +111,62 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+        <div
+            class="px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-200 bg-white">
+
+            {{-- Kiri: Per Page Selector + Info --}}
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span>Show</span>
+                <form method="GET" action="{{ route('stock.movement') }}" id="per-page-form">
+                    <select name="per_page" onchange="document.getElementById('per-page-form').submit()"
+                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        @foreach ([10, 50, 100] as $size)
+                            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                                {{ $size }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+                <span>entries</span>
+                <span class="text-gray-400">
+                    &mdash; Showing {{ $filtered->firstItem() }}-{{ $filtered->lastItem() }} of
+                    {{ $filtered->total() }}
+                </span>
+            </div>
+
+            {{-- Kanan: Pagination custom (tanpa teks "Showing X to Y") --}}
+            <div class="flex items-center gap-1">
+                {{-- Prev --}}
+                @if ($filtered->onFirstPage())
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">‹</span>
+                @else
+                    <a href="{{ $filtered->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">‹</a>
+                @endif
+
+                {{-- Page Numbers --}}
+                @foreach ($filtered->getUrlRange(1, $filtered->lastPage()) as $page => $url)
+                    @if ($page == $filtered->currentPage())
+                        <span
+                            class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white font-semibold">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}&per_page={{ request('per_page', 10) }}"
+                            class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">{{ $page }}</a>
+                    @endif
+                @endforeach
+
+                {{-- Next --}}
+                @if ($filtered->hasMorePages())
+                    <a href="{{ $filtered->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">›</a>
+                @else
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">›</span>
+                @endif
+            </div>
+
         </div>
     </div>
 @endsection

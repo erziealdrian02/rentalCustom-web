@@ -14,5 +14,10 @@ class Driver extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['name', 'vehicle_type', 'license_plate', 'phone', 'email','status'];
+    protected $fillable = ['name', 'vehicle_type', 'license_plate', 'phone', 'email', 'status'];
+
+    public function shipping()
+    {
+        return $this->hasMany(Shipping::class, 'driver_id', 'id');
+    }
 }
