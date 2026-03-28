@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customers;
+use App\Models\Rentals;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class ReturnsController extends Controller
 {
@@ -15,128 +20,168 @@ class ReturnsController extends Controller
     {
         return session('rentals', [
             [
-                'id' => 1, 'invoiceNumber' => 'INV-2025-001', 'customerId' => 1,
-                'customerName' => 'John Doe', 'status' => 'Active',
-                'rentalStartDate' => '2025-01-10', 'rentalEndDate' => '2025-01-17', 'totalPrice' => 175.00,
-                'items' => [
-                    ['toolId' => 1, 'toolName' => 'Angle Grinder', 'quantity' => 2, 'dailyRate' => 25.00, 'subtotal' => 175.00],
-                ],
+                'id' => 1,
+                'invoiceNumber' => 'INV-2025-001',
+                'customerId' => 1,
+                'customerName' => 'John Doe',
+                'status' => 'Active',
+                'rentalStartDate' => '2025-01-10',
+                'rentalEndDate' => '2025-01-17',
+                'totalPrice' => 175.0,
+                'items' => [['toolId' => 1, 'toolName' => 'Angle Grinder', 'quantity' => 2, 'dailyRate' => 25.0, 'subtotal' => 175.0]],
             ],
             [
-                'id' => 2, 'invoiceNumber' => 'INV-2025-002', 'customerId' => 2,
-                'customerName' => 'Jane Smith', 'status' => 'Active',
-                'rentalStartDate' => '2025-01-05', 'rentalEndDate' => '2025-01-12', 'totalPrice' => 210.00,
-                'items' => [
-                    ['toolId' => 2, 'toolName' => 'Drill Machine', 'quantity' => 1, 'dailyRate' => 20.00, 'subtotal' => 140.00],
-                    ['toolId' => 3, 'toolName' => 'Safety Helmet', 'quantity' => 2, 'dailyRate' => 5.00,  'subtotal' => 70.00],
-                ],
+                'id' => 2,
+                'invoiceNumber' => 'INV-2025-002',
+                'customerId' => 2,
+                'customerName' => 'Jane Smith',
+                'status' => 'Active',
+                'rentalStartDate' => '2025-01-05',
+                'rentalEndDate' => '2025-01-12',
+                'totalPrice' => 210.0,
+                'items' => [['toolId' => 2, 'toolName' => 'Drill Machine', 'quantity' => 1, 'dailyRate' => 20.0, 'subtotal' => 140.0], ['toolId' => 3, 'toolName' => 'Safety Helmet', 'quantity' => 2, 'dailyRate' => 5.0, 'subtotal' => 70.0]],
             ],
             [
-                'id' => 3, 'invoiceNumber' => 'INV-2025-003', 'customerId' => 3,
-                'customerName' => 'Bob Johnson', 'status' => 'Active',
-                'rentalStartDate' => '2025-01-15', 'rentalEndDate' => '2025-01-22', 'totalPrice' => 105.00,
-                'items' => [
-                    ['toolId' => 4, 'toolName' => 'Hammer', 'quantity' => 3, 'dailyRate' => 5.00, 'subtotal' => 105.00],
-                ],
+                'id' => 3,
+                'invoiceNumber' => 'INV-2025-003',
+                'customerId' => 3,
+                'customerName' => 'Bob Johnson',
+                'status' => 'Active',
+                'rentalStartDate' => '2025-01-15',
+                'rentalEndDate' => '2025-01-22',
+                'totalPrice' => 105.0,
+                'items' => [['toolId' => 4, 'toolName' => 'Hammer', 'quantity' => 3, 'dailyRate' => 5.0, 'subtotal' => 105.0]],
             ],
         ]);
     }
 
-    public function returnsTools()
+    public function returnsTools(Request $request)
     {
-        $returns = $this->getReturns();
-        $total = count($returns);
-        $completed = count(array_filter($returns, fn($r) => $r['status'] === 'Completed'));
-        $pending = count(array_filter($returns, fn($r) => $r['status'] === 'Pending'));
+        $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
 
-        return view('returns.returns', compact('returns', 'total', 'completed', 'pending'));
+        $customers = Customers::all();
+        $allReturns = Rentals::whereNotNull('return_invoice_number')->get();
+        $rentals = Rentals::with('customer')->whereNotNull('return_invoice_number')->where('rental_status', 'Returning')->paginate($perPage);
+
+        $allMovementIds = [];
+        foreach ($rentals->items() as $rental) {
+            $ids = json_decode($rental->movement_id, true) ?? [];
+            $allMovementIds = array_merge($allMovementIds, $ids);
+        }
+
+        $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovementIds))->get()->keyBy('id');
+
+        $totalReturn = $allReturns->count();
+        $activeRentals = $allReturns->where('rental_status', 'Pending')->count();
+        $completedRentals = $allReturns->where('payment_status', 'paid')->count();
+        $totalRevenue = $allReturns->sum('total_price');
+
+        // Buat lookup customers by id untuk modal
+        $customersById = [];
+        foreach ($customers as $c) {
+            $customersById[$c->id] = $c;
+        }
+
+        // Buat lookup movements by rental id untuk modal
+        $movementsByRentalId = [];
+        foreach ($rentals->items() as $rental) {
+            $ids = json_decode($rental->movement_id, true) ?? [];
+            $movementsByRentalId[$rental->id] = collect($ids)->map(fn($id) => $movements->get($id))->filter()->values();
+        }
+
+        return view('returns.returns', compact('rentals', 'customersById', 'movementsByRentalId', 'totalReturn', 'activeRentals', 'completedRentals', 'totalRevenue'));
     }
 
     public function returnsFrom()
     {
-        $rentals = $this->getRentals();
-        return view('returns.returnForm', compact('rentals'));
+        $rentals = Rentals::with('customer')
+            ->whereNull('return_invoice_number')
+            ->whereNotIn('rental_status', ['Returning'])
+            ->get();
+
+        // Resolve movements & tools
+        $allMovIds = [];
+        foreach ($rentals as $rental) {
+            $ids = json_decode($rental->movement_id, true) ?? [];
+            $allMovIds = array_merge($allMovIds, $ids);
+        }
+
+        $movements = StockMovement::with('tool')->whereIn('id', array_unique($allMovIds))->get()->keyBy('id');
+
+        // Buat movementsByRentalId
+        $movementsByRentalId = [];
+        foreach ($rentals as $rental) {
+            $ids = json_decode($rental->movement_id, true) ?? [];
+            $movementsByRentalId[$rental->id] = collect($ids)->map(fn($id) => $movements->get($id))->filter()->values();
+        }
+
+        return view('returns.returnForm', compact('rentals', 'movementsByRentalId'));
     }
- 
+
     // ─── Store ───────────────────────────────────────────────
-    public function store(Request $request)
+    public function returnStore(Request $request)
     {
-        $request->validate([
-            'rentalId'   => 'required|integer',
-            'auditItems' => 'required|string',
-        ]);
- 
-        $rentals = $this->getRentals();
-        $rental  = collect($rentals)->firstWhere('id', (int) $request->rentalId);
- 
-        if (!$rental) {
-            return back()->withErrors(['rentalId' => 'Rental not found.'])->withInput();
-        }
- 
+        $rental = Rentals::findOrFail($request->rentalId);
         $auditItems = json_decode($request->auditItems, true);
+
         if (empty($auditItems)) {
-            return back()->withErrors(['auditItems' => 'Audit data is missing.'])->withInput();
+            return back()->withErrors(['auditItems' => 'No audit data found.']);
         }
- 
-        // Hitung summary finansial
-        $totalGood        = 0;
-        $totalDamageLoss  = 0;
-        $totalLostLoss    = 0;
-        $totalSoldRevenue = 0;
- 
-        foreach ($auditItems as $item) {
-            $totalGood        += $item['good']    * $item['originalRate'];
-            $totalDamageLoss  += $item['damaged'] * $item['originalRate'];
-            $totalLostLoss    += $item['lost']    * $item['originalRate'];
-            $totalSoldRevenue += $item['sold']    * ($item['originalRate'] * 0.5);
+
+        // Generate return invoice number
+        $returnInvoice = 'RET-' . strtoupper(substr($rental->invoice_number, 4)) . '-' . now()->format('Ymd');
+        while (Rentals::where('return_invoice_number', $returnInvoice)->exists()) {
+            $returnInvoice = 'RET-' . strtoupper(substr($rental->invoice_number, 4)) . '-' . now()->format('YmdHis');
         }
- 
-        $totalLoss  = $totalDamageLoss + $totalLostLoss;
-        $netRevenue = $totalGood + $totalSoldRevenue;
- 
-        $returns  = $this->getReturns();
-        $maxId    = count($returns) ? max(array_column($returns, 'id')) : 0;
-        $returnId = 'RET-' . now()->year . '-' . str_pad(count($returns) + 1, 3, '0', STR_PAD_LEFT);
- 
-        $firstItem = $rental['items'][0] ?? [];
- 
-        $returns[] = [
-            'id'                    => $maxId + 1,
-            'returnId'              => $returnId,
-            'rentalId'              => (int) $request->rentalId,
-            'invoiceNumber'         => $rental['invoiceNumber'],
-            'customerId'            => $rental['customerId'],
-            'customerName'          => $rental['customerName'],
-            'toolName'              => count($rental['items']) > 1
-                                        ? count($rental['items']) . ' tools'
-                                        : ($firstItem['toolName'] ?? '-'),
-            'returnDate'            => now()->toDateString(),
-            'originalRentalDate'    => $rental['rentalStartDate'],
-            'requestedReturnDate'   => $rental['rentalEndDate'],
-            'status'                => 'Completed',
-            'condition'             => ($totalDamageLoss > 0 || $totalLostLoss > 0) ? 'Damaged' : 'Good',
-            'originalRevenue'       => $rental['totalPrice'],
-            'totalAuditRevenueLoss' => $totalLoss,
-            'netRevenue'            => $netRevenue,
-            'auditDate'             => now()->toDateString(),
-            'items'                 => array_map(fn($item) => [
-                'toolId'       => $item['toolId'],
-                'toolName'     => $item['toolName'],
-                'quantity'     => $item['quantity'],
-                'originalRate' => $item['originalRate'],
-                'condition'    => $item['damaged'] > 0 ? 'Damaged' : 'Good',
-                'auditDetails' => [
-                    'good'    => $item['good'],
-                    'damaged' => $item['damaged'],
-                    'lost'    => $item['lost'],
-                    'sold'    => $item['sold'],
-                ],
-            ], array_values($auditItems)),
+
+        // Ambil warehouse_id dari rental (ambil pertama)
+        $warehouseIds = json_decode($rental->warehouse_id, true) ?? [];
+        $warehouseId = $warehouseIds[0] ?? 1;
+
+        // Map stock_type per kondisi
+        $stockTypeMap = [
+            'good' => 'RETURN',
+            'damaged' => 'DAMAGED',
+            'lost' => 'LOST',
+            'sold' => 'SOLD',
         ];
- 
-        session(['returns' => $returns]);
- 
-        return redirect()->route('returns.index')
-            ->with('success', "Return processed successfully! ID: {$returnId}");
+
+        $returnMovementIds = [];
+        foreach ($auditItems as $item) {
+            $toolId = $item['toolId'];
+            foreach ($stockTypeMap as $condition => $stockType) {
+                $qty = intval($item[$condition] ?? 0);
+                if ($qty <= 0) {
+                    continue;
+                }
+
+                $movId = (string) Str::uuid();
+
+                $stockMOvement = new StockMovement();
+                $stockMOvement->id = $movId;
+                $stockMOvement->reference_id = $returnInvoice;
+                $stockMOvement->warehouse_id = $warehouseId;
+                $stockMOvement->tool_id = $toolId;
+                $stockMOvement->movement_type = 'Waiting';
+                $stockMOvement->stock_type = $stockType;
+                $stockMOvement->quantity = $qty;
+                $stockMOvement->notes = "Return from {$rental->invoice_number} — condition: {$condition}";
+                $stockMOvement->created_by = auth()->id();
+
+                $stockMOvement->save();
+
+                $returnMovementIds[] = $movId;
+            }
+        }
+
+        $rental->return_invoice_number = $returnInvoice;
+        $rental->return_movement_id = json_encode($returnMovementIds);
+        $rental->rental_status = 'Returning';
+
+        $rental->save();
+
+        return redirect()
+            ->route('returns.tools')
+            ->with('success', "Return {$returnInvoice} berhasil diproses.");
     }
 }

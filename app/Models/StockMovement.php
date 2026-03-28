@@ -25,4 +25,9 @@ class StockMovement extends Model
     {
         return $this->belongsTo(Warehouse::class, 'warehouse_id', 'id');
     }
+
+    public function rent()
+    {
+        return $this->belongsTo(Rentals::class, 'reference_id', 'return_invoice_number');
+    }
 }
