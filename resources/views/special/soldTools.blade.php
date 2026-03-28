@@ -41,24 +41,24 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($soldTools as $tool)
+                        @foreach ($soldTools as $soldTool)
                             @php
-                                $profit = $tool['soldPrice'] - $tool['replacementValue'];
+                                $profit = $soldTool->selling_price - $soldTool->tool->replacement_value;
                                 $profitPercent =
-                                    $tool['replacementValue'] > 0
-                                        ? number_format(($profit / $tool['replacementValue']) * 100, 0)
+                                    $soldTool->tool->replacement_value > 0
+                                        ? number_format(($profit / $soldTool->tool->replacement_value) * 100, 0)
                                         : 0;
                                 $profitColor = $profit >= 0 ? 'text-green-600' : 'text-red-600';
                                 $profitPrefix = $profit >= 0 ? '+' : '';
-                                $soldDate = \Carbon\Carbon::parse($tool['soldDate'])->format('d M Y');
+                                $soldDate = \Carbon\Carbon::parse($soldTool->created_at)->format('d M Y');
                             @endphp
                             <tr class="border-b hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 font-semibold">{{ $tool['toolCode'] }}</td>
-                                <td class="px-6 py-4">{{ $tool['toolName'] }}</td>
-                                <td class="px-6 py-4 text-gray-600">{{ $tool['serialNumber'] }}</td>
-                                <td class="px-6 py-4">${{ number_format($tool['replacementValue'], 2) }}</td>
+                                <td class="px-6 py-4 font-semibold">{{ $soldTool->tool->code_tools }}</td>
+                                <td class="px-6 py-4">{{ $soldTool->tool->name }}</td>
+                                <td class="px-6 py-4 text-gray-600">{{ $soldTool->tool->serial_number }}</td>
+                                <td class="px-6 py-4">Rp. {{ number_format($soldTool->tool->replacement_value, 2) }}</td>
                                 <td class="px-6 py-4">
-                                    <p class="font-semibold">${{ number_format($tool['soldPrice'], 2) }}</p>
+                                    <p class="font-semibold">Rp. {{ number_format($soldTool->tool->replacement_value, 2) }}</p>
                                     <p class="text-xs {{ $profitColor }}">
                                         {{ $profitPrefix }}{{ number_format($profit, 2) }} ({{ $profitPercent }}%)
                                     </p>
