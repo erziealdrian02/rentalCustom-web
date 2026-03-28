@@ -6,6 +6,11 @@
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-semibold text-gray-900">Warehouse Stock Overview</h2>
 
+        <a href="{{ route('stock.restock.form') }}"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
+            Restock Tools
+        </a>
+
         {{-- Filter dropdown — submit otomatis saat berubah --}}
         <form method="GET" action="{{ route('stock.overview') }}" id="filter-form">
             <select name="warehouse" onchange="document.getElementById('filter-form').submit()"
@@ -21,10 +26,15 @@
     </div>
 
     {{-- Summary Cards --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
             <p class="text-gray-600 text-sm font-medium">Total Items in Stock</p>
             <p class="text-3xl font-bold text-gray-900 mt-2">{{ $totalItems }}</p>
+        </div>
+
+        <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            <p class="text-gray-600 text-sm font-medium">Pending Items Waiting for Delivered</p>
+            <p class="text-3xl font-bold text-gray-900 mt-2">{{ $pendingItems }}</p>
         </div>
 
         <div class="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
@@ -90,6 +100,62 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+        <div
+            class="px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-gray-200 bg-white">
+
+            {{-- Kiri: Per Page Selector + Info --}}
+            <div class="flex items-center gap-2 text-sm text-gray-600">
+                <span>Show</span>
+                <form method="GET" action="{{ route('stock.overview') }}" id="per-page-form">
+                    <select name="per_page" onchange="document.getElementById('per-page-form').submit()"
+                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        @foreach ([10, 50, 100] as $size)
+                            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                                {{ $size }}
+                            </option>
+                        @endforeach
+                    </select>
+                </form>
+                <span>entries</span>
+                <span class="text-gray-400">
+                    &mdash; Showing {{ $filteredStock->firstItem() }}-{{ $filteredStock->lastItem() }} of
+                    {{ $filteredStock->total() }}
+                </span>
+            </div>
+
+            {{-- Kanan: Pagination custom (tanpa teks "Showing X to Y") --}}
+            <div class="flex items-center gap-1">
+                {{-- Prev --}}
+                @if ($filteredStock->onFirstPage())
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">‹</span>
+                @else
+                    <a href="{{ $filteredStock->previousPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">‹</a>
+                @endif
+
+                {{-- Page Numbers --}}
+                @foreach ($filteredStock->getUrlRange(1, $filteredStock->lastPage()) as $page => $url)
+                    @if ($page == $filteredStock->currentPage())
+                        <span
+                            class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white font-semibold">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}&per_page={{ request('per_page', 10) }}"
+                            class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">{{ $page }}</a>
+                    @endif
+                @endforeach
+
+                {{-- Next --}}
+                @if ($filteredStock->hasMorePages())
+                    <a href="{{ $filteredStock->nextPageUrl() }}&per_page={{ request('per_page', 10) }}"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 transition">›</a>
+                @else
+                    <span
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-300 cursor-not-allowed">›</span>
+                @endif
+            </div>
+
         </div>
     </div>
 @endsection

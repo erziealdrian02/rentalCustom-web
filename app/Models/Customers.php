@@ -11,10 +11,12 @@ class Customers extends Model
     use HasFactory;
 
     protected $table = 'customers';
-
     protected $primaryKey = 'id'; // 🔥 wajib
-
     public $incrementing = false; // karena UUID
-
     protected $keyType = 'string';
+
+    public function rentals()
+    {
+        return $this->hasMany(Rentals::class, 'customer_id', 'id');
+    }
 }

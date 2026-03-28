@@ -77,13 +77,18 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/master/users', [UsersController::class, 'masterUsers'])->name('master.users');
     Route::post('/master/users/post', [UsersController::class, 'masterUsersStore'])->name('users.store');
+    Route::put('/master/users/update/{id}', [UsersController::class, 'masterUsersUpdate'])->name('users.update');
+    Route::put('/master/users/reset/{id}', [UsersController::class, 'masterUsersReset'])->name('users.reset');
+    Route::delete('/master/users/delete/{id}', [UsersController::class, 'masterUsersDestroy'])->name('users.destroy');
 
     Route::get('/stock/overview', [StockController::class, 'overview'])->name('stock.overview');
+    Route::get('/stock/restock/form', [StockController::class, 'restockForm'])->name('stock.restock.form');
+    Route::post('/stock/restock/store', [StockController::class, 'restockStore'])->name('stock.restock.store');
     Route::get('/stock/movement', [StockController::class, 'movement'])->name('stock.movement');
 
     Route::get('/transactions/rentals', [RentalsController::class, 'rental'])->name('transactions.rentals');
     Route::get('/transactions/rentals/form', [RentalsController::class, 'rentalForm'])->name('transactions.rentals.form');
-    Route::post('/transactions/rentals/post', [RentalsController::class, 'store'])->name('transactions.rentals.store');
+    Route::post('/transactions/rentals/post', [RentalsController::class, 'rentalStore'])->name('transactions.rentals.store');
     Route::get('/transactions/rentals/detail/{id}', [RentalsController::class, 'show'])->name('transactions.rentals.show');
 
     Route::get('/shipping/list', [ShippingController::class, 'list'])->name('shipping.list');

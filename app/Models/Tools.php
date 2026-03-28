@@ -19,4 +19,14 @@ class Tools extends Model
     {
         return $this->belongsTo(Categories::class, 'category_id');
     }
+
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class, 'tool_id', 'id_tools');
+    }
+
+    public function movement_stocks()
+    {
+        return $this->hasMany(StockMovement::class, 'tool_id', 'id_tools');
+    }
 }

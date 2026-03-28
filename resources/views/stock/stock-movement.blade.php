@@ -10,6 +10,9 @@
             'RETURN' => 'bg-purple-100 text-purple-800',
             'LOST' => 'bg-red-100 text-red-800',
             'DAMAGED' => 'bg-orange-100 text-orange-800',
+            'WAITING' => 'bg-gray-100 text-gray-800',
+            'SHIPPING' => 'bg-blue-100 text-blue-800',
+            'ARRIVED' => 'bg-green-100 text-green-800',
         ];
 
         $typeIcons = [
@@ -19,6 +22,9 @@
             'RETURN' => '↩️',
             'LOST' => '❌',
             'DAMAGED' => '⚠️',
+            'WAITING' => '⏳',
+            'SHIPPING' => '🚚',
+            'ARRIVED' => '✅',
         ];
 
         // Tipe yang mengurangi stok (ditampilkan merah dengan tanda minus)
@@ -52,38 +58,51 @@
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Date</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Tool</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Warehouse</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Type</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Quantity</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Reference</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Last Updated</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($filtered as $movement)
                         @php
-                            $typeColor = $typeColors[$movement['type']] ?? 'bg-gray-100 text-gray-800';
-                            $icon = $typeIcons[$movement['type']] ?? '•';
-                            $isOut = in_array($movement['type'], $outTypes);
+                            $typeColor = $typeColors[$movement->stock_type] ?? 'bg-gray-100 text-gray-800';
+                            $typeMovementColor = $typeColors[$movement->movement_type] ?? 'bg-gray-100 text-gray-800';
+                            $icon = $typeIcons[$movement->stock_type] ?? '•';
+                            $movementIcon = $typeIcons[$movement->movement_type] ?? '•';
+                            $isOut = in_array($movement->stock_type, $outTypes);
                             $qtyColor = $isOut ? 'text-red-600' : 'text-green-600';
                             $qtyPrefix = $isOut ? '-' : '+';
-                            $formattedDate = \Carbon\Carbon::parse($movement['date'])->format('d M Y');
+                            $formattedDateCreated = \Carbon\Carbon::parse($movement->created_at)->format('d M Y');
+                            $formattedDateLastUpdated = \Carbon\Carbon::parse($movement->updated_at)->format('d M Y');
                         @endphp
                         <tr class="border-b hover:bg-gray-50 transition">
-                            <td class="px-6 py-4">{{ $formattedDate }}</td>
-                            <td class="px-6 py-4 font-semibold">{{ $movement['toolName'] }}</td>
-                            <td class="px-6 py-4">{{ $movement['warehouseName'] }}</td>
+                            <td class="px-6 py-4">{{ $formattedDateCreated }}</td>
+                            <td class="px-6 py-4 font-semibold">{{ $movement->tool->name ?? 'Unknown Tool' }}</td>
+                            <td class="px-6 py-4">{{ $movement->warehouse->name ?? 'Unknown Warehouse' }}</td>
+                            <td class="px-6 py-4">
+                                <span
+                                    class="px-3 py-1 text-xs font-semibold rounded inline-flex items-center gap-1 {{ $typeMovementColor }}">
+                                    <span>{{ $movementIcon }}</span>
+                                    <span>{{ $movement->movement_type }}</span>
+                                </span>
+                            </td>
                             <td class="px-6 py-4">
                                 <span
                                     class="px-3 py-1 text-xs font-semibold rounded inline-flex items-center gap-1 {{ $typeColor }}">
                                     <span>{{ $icon }}</span>
-                                    <span>{{ $movement['type'] }}</span>
+                                    <span>{{ $movement->stock_type }}</span>
                                 </span>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="font-semibold {{ $qtyColor }}">
-                                    {{ $qtyPrefix }}{{ $movement['quantity'] }}
+                                    {{ $qtyPrefix }}{{ $movement->quantity }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-gray-600">{{ $movement['reference'] }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ $movement->reference_id }}</td>
+                            <td class="px-6 py-4">{{ $formattedDateLastUpdated }}</td>
                         </tr>
                     @empty
                         <tr>
