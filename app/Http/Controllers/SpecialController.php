@@ -30,6 +30,7 @@ class SpecialController extends Controller
     {
         $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
         $lostTools = StockMovement::where('stock_type', 'LOST')->paginate($perPage);
+        // dd($lostTools);
 
         return view('special.lostTools', compact('lostTools'));
     }
