@@ -176,21 +176,6 @@ class RentalsController extends Controller
         return view('rentals.rentals', compact('rentals', 'customersById', 'movementsByRentalId', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
     }
 
-    public function show($id)
-    {
-        $rentals = $this->getRentals();
-        $customers = $this->getCustomers();
-
-        $rental = collect($rentals)->firstWhere('id', (int) $id);
-        if (!$rental) {
-            abort(404);
-        }
-
-        $customer = collect($customers)->firstWhere('id', $rental['customerId']);
-
-        return view('rentals.rental-show', compact('rental', 'customer'));
-    }
-
     public function rentalForm()
     {
         $getCustomers = Customers::get();
@@ -204,17 +189,6 @@ class RentalsController extends Controller
 
         $getStock = Stock::get();
 
-        $customers = count(
-            array_filter($getCustomers->toArray(), function ($r) {
-                return isset($r['status']) && $r['status'] === 'active';
-            }),
-        );
-        $tools = count(
-            array_filter($getTools->toArray(), function ($r) {
-                return isset($r['status']) && $r['status'] === 'available';
-            }),
-        );
-
         $pricingMap = [];
         foreach ($getTools as $tool) {
             $pricingMap[$tool['id_tools']] = [
@@ -222,10 +196,9 @@ class RentalsController extends Controller
                 'weeklyRate' => $tool['weekly_rate'],
                 'monthlyRate' => $tool['monthly_rate'],
             ];
-            // dd($pricingMap);
         }
 
-        return view('rentals.createRental', compact('customers', 'getCustomers', 'getTools', 'tools', 'pricingMap'));
+        return view('rentals.createRental', compact('getCustomers', 'getTools', 'pricingMap'));
     }
 
     public function rentalStore(Request $request)
@@ -256,8 +229,7 @@ class RentalsController extends Controller
         }
 
         $totalPrice = array_sum(array_column($items, 'subtotal'));
-        $rentals = $this->getRentals();
-        $maxId = count($rentals) ? max(array_column($rentals, 'id')) : 0;
+        $rentals = Rentals::get();
         $invoiceNum = 'INV-' . now()->year . '-' . str_pad(count($rentals) + 1, 3, '0', STR_PAD_LEFT);
 
         // Rentang tanggal keseluruhan dari semua item
