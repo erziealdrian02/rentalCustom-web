@@ -28,7 +28,7 @@ class SpecialController extends Controller
     public function soldTools(Request $request)
     {
         $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
-        $soldTools = StockMovement::where('stock_type', 'SOLD')->get();
+        $soldTools = StockMovement::where('stock_type', 'SOLD')->paginate($perPage);
         $totalSold = count($soldTools);
         // dd($soldTools);
 

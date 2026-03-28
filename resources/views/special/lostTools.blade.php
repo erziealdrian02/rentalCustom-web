@@ -55,7 +55,7 @@
             {{-- Kiri: Per Page Selector + Info --}}
             <div class="flex items-center gap-2 text-sm text-gray-600">
                 <span>Show</span>
-                <form method="GET" action="{{ route('stock.movement') }}" id="per-page-form">
+                <form method="GET" action="{{ route('lost.tools') }}" id="per-page-form">
                     <select name="per_page" onchange="document.getElementById('per-page-form').submit()"
                         class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                         @foreach ([10, 50, 100] as $size)
