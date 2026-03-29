@@ -3,6 +3,23 @@
 
 @section('content')
     {{-- Header --}}
+    <script>
+        const uploadProofUrl = '{{ route('rentals.upload.proof', ':id') }}';
+    </script>
+
+    @if (session('success'))
+        <div id="notif"
+            class="fixed top-5 right-5 z-50 bg-green-500 text-white px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            {{ session('success') }}
+        </div>
+        <script>
+            setTimeout(() => document.getElementById('notif')?.remove(), 3000);
+        </script>
+    @endif
+
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <h2 class="text-2xl font-semibold text-gray-900">Rental List</h2>
         <a href="{{ route('transactions.rentals.form') }}"
@@ -161,7 +178,7 @@
     {{-- Modal --}}
     <div id="rentalModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
         onclick="handleBackdropClick(event)">
-        <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+        <div class="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
 
             {{-- Modal Header --}}
             <div class="flex justify-between items-start p-6 pb-4">
@@ -180,10 +197,11 @@
             <div class="px-6 pb-6 space-y-5">
 
                 {{-- Customer Info + Rental Status --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {{-- Customer Information --}}
                     <div class="border border-gray-200 rounded-xl p-4">
-                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Customer Information</p>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Customer Information
+                        </p>
                         <p id="modal-customer-name" class="text-base font-bold text-gray-900"></p>
                         <p id="modal-customer-email" class="text-sm text-gray-500 mt-1"></p>
                         <p id="modal-customer-phone" class="text-sm text-gray-500"></p>
@@ -196,6 +214,17 @@
                             class="inline-block px-3 py-1 rounded-full text-sm font-medium"></span>
                         <p class="text-sm text-gray-500 mt-3">Rental Period:</p>
                         <p id="modal-period" class="text-sm font-medium text-gray-900 mt-0.5"></p>
+                    </div>
+
+                    {{-- Rental Status --}}
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment Status</p>
+
+                        <span id="modal-payment-badge"
+                            class="inline-block px-3 py-1 rounded-full text-sm font-medium mb-3"></span>
+
+                        {{-- Container dynamic --}}
+                        <div id="modal-payment-content"></div>
                     </div>
                 </div>
 
@@ -219,14 +248,33 @@
 
                 {{-- Action Buttons --}}
                 <div class="flex flex-col sm:flex-row gap-3 pt-1">
-                    <button
-                        class="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                        </svg>
-                        Print Details
-                    </button>
+                    <div class="flex flex-col sm:flex-row gap-3 pt-1">
+
+                        {{-- Export Excel --}}
+                        <a id="btn-export-excel" href="#"
+                            class="flex-1 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition font-medium flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                            </svg>
+                            Export Excel
+                        </a>
+
+                        {{-- Print --}}
+                        <button
+                            class="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            Print Details
+                        </button>
+
+                        <button onclick="closeRentalModal()"
+                            class="flex-1 bg-gray-100 text-gray-800 py-3 rounded-xl hover:bg-gray-200 transition font-medium">
+                            Close
+                        </button>
+                    </div>
                     <button onclick="closeRentalModal()"
                         class="flex-1 bg-gray-100 text-gray-800 py-3 rounded-xl hover:bg-gray-200 transition font-medium">
                         Close
@@ -237,47 +285,114 @@
         </div>
     </div>
 
+    {{-- Modal Upload Payment Proof --}}
+    <div id="uploadProofModal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Upload Payment Proof</h3>
+                <button onclick="closeUploadModal()"
+                    class="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <form id="uploadProofForm" enctype="multipart/form-data">
+                @csrf
+                {{-- Preview --}}
+                <div id="uploadPreviewWrapper" class="hidden mb-4">
+                    <img id="uploadPreviewImg" src="" alt="Preview"
+                        class="w-full max-h-56 object-cover rounded-xl border border-gray-200" />
+                </div>
+
+                {{-- Dropzone --}}
+                <label for="paymentProofInput"
+                    class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition group">
+                    <svg class="w-8 h-8 text-gray-400 group-hover:text-blue-500 mb-2" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span class="text-sm text-gray-500 group-hover:text-blue-600">Click to upload image</span>
+                    <span class="text-xs text-gray-400 mt-1">JPG, PNG — max 5MB</span>
+                    <input id="paymentProofInput" type="file" class="hidden" accept="image/jpg,image/jpeg,image/png"
+                        onchange="previewUpload(event)" />
+                </label>
+
+                <div id="uploadError" class="hidden mt-2 text-sm text-red-500"></div>
+
+                <div class="flex gap-3 mt-5">
+                    <button type="button" onclick="submitPaymentProof()"
+                        class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl hover:bg-blue-700 transition font-medium">
+                        Upload
+                    </button>
+                    <button type="button" onclick="closeUploadModal()"
+                        class="flex-1 bg-gray-100 text-gray-800 py-2.5 rounded-xl hover:bg-gray-200 transition font-medium">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal Image Fullscreen --}}
+    <div id="imageModal" class="hidden fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-4"
+        onclick="closeImageModal()">
+        <img id="imageModalImg" src="" alt="Payment Proof"
+            class="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain" />
+    </div>
+
     {{-- Data JSON untuk modal (embed sekali, tidak ada JS yang generate tabel) --}}
     <script>
+        {{-- ─── Data dari server ──────────────────────────────────────── --}}
         const rentalsData = @json($rentals->items());
         const customersById = @json($customersById);
         const movementsByRentalId = @json($movementsByRentalId);
 
-        console.log(JSON.parse(atob('{{ base64_encode(json_encode($movementsByRentalId)) }}')));
+        let currentRentalId = null;
 
-        function formatCurrency(amount) {
-            return 'Rp. ' + new Intl.NumberFormat('id-ID').format(amount);
-        }
-
-        function formatDate(dateStr) {
-            if (!dateStr) return '-';
-            return new Date(dateStr).toLocaleDateString('id-ID', {
+        {{-- ─── Helpers ────────────────────────────────────────────────── --}}
+        const fmt = {
+            currency: n => 'Rp. ' + new Intl.NumberFormat('id-ID').format(n),
+            date: s => s ? new Date(s).toLocaleDateString('id-ID', {
                 day: '2-digit',
                 month: 'short',
                 year: 'numeric'
-            });
-        }
+            }) : '-',
+        };
+
+        const SVG = {
+            upload: `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>`,
+            eye: `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`,
+        };
+
+        const BTN =
+            `display:inline-flex;align-items:center;gap:6px;background:transparent;border:0.5px solid #ccc;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;`;
+
+        const el = id => document.getElementById(id);
+
+        {{-- ─── Rental Modal ───────────────────────────────────────────── --}}
 
         function openRentalModal(rentalId) {
             const rental = rentalsData.find(r => r.id === rentalId);
             if (!rental) return;
 
+            currentRentalId = rentalId;
+
             const customer = customersById[rental.customer_id] ?? null;
             const movements = movementsByRentalId[rentalId] ?? [];
 
             // Header
-            document.getElementById('modal-invoice').textContent = rental.invoice_number;
-            document.getElementById('modal-created').textContent =
-                'Created: ' + formatDate(rental.created_at);
+            el('modal-invoice').textContent = rental.invoice_number;
+            el('modal-created').textContent = 'Created: ' + fmt.date(rental.created_at);
 
             // Customer
-            document.getElementById('modal-customer-name').textContent = rental.customer?.name ?? 'N/A';
-            document.getElementById('modal-customer-email').textContent = customer?.email ?? '';
-            document.getElementById('modal-customer-phone').textContent = customer?.phone ?? '';
+            el('modal-customer-name').textContent = customer?.name ?? 'N/A';
+            el('modal-customer-email').textContent = customer?.email ?? '';
+            el('modal-customer-phone').textContent = customer?.phone ?? '';
 
-            // Status badge
-            const badge = document.getElementById('modal-status-badge');
-            badge.textContent = rental.rental_status;
+            // Rental status badge
             const statusClasses = {
                 'Pending': 'bg-yellow-100 text-yellow-800',
                 'Delivered': 'bg-green-100 text-green-800',
@@ -286,70 +401,208 @@
                 'Returning': 'bg-purple-100 text-purple-800',
                 'On Check': 'bg-gray-100 text-gray-800',
             };
+            const badge = el('modal-status-badge');
+            badge.textContent = rental.rental_status;
             badge.className = 'inline-block px-3 py-1 rounded-full text-sm font-medium ' +
                 (statusClasses[rental.rental_status] ?? 'bg-gray-100 text-gray-800');
 
             // Rental period
-            document.getElementById('modal-period').textContent =
-                formatDate(rental.rental_start_date) + ' – ' + formatDate(rental.rental_end_date);
+            el('modal-period').textContent =
+                fmt.date(rental.rental_start_date) + ' – ' + fmt.date(rental.rental_end_date);
 
-            // Items dari stock_movements
-            document.getElementById('modal-items-title').textContent = `Rental Items (${movements.length})`;
-            document.getElementById('modal-items-list').innerHTML = movements.map(mov => {
-                const toolName = mov.tool?.name ?? mov.tool_id;
-                const toolCode = mov.tool?.code_tools ?? '';
-                const dailyRate = mov.tool?.daily_rate ?? 0;
+            // Payment badge — only unpaid / paid
+            const paymentMeta = {
+                unpaid: {
+                    label: 'Unpaid',
+                    cls: 'bg-red-100 text-red-800'
+                },
+                paid: {
+                    label: 'Paid',
+                    cls: 'bg-green-100 text-green-800'
+                },
+            };
+            const pm = paymentMeta[rental.payment_status] ?? {
+                label: rental.payment_status,
+                cls: 'bg-gray-100 text-gray-800'
+            };
+            const payBadge = el('modal-payment-badge');
+            payBadge.textContent = pm.label;
+            payBadge.className = 'inline-block px-3 py-1 rounded-full text-sm font-medium ' + pm.cls;
 
-                // Hitung durasi dari rental period
-                const startDate = new Date(rental.rental_start_date);
-                const endDate = new Date(rental.rental_end_date);
-                const days = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+            // Payment content — always show Upload/Replace + View if proof exists
+            const payContent = el('modal-payment-content');
+            if (!rental.payment_proof_image) {
+                payContent.innerHTML = `
+                <div style="margin-top:10px;">
+                    <button onclick="openUploadModal()" style="${BTN}">
+                        ${SVG.upload} Upload proof
+                    </button>
+                </div>`;
+            } else {
+                const imageUrl = '/storage/' + rental.payment_proof_image;
+                payContent.innerHTML = `
+                <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:13px;color:#6b7280;">Payment proof</span>
+                    <div style="display:flex;gap:6px;">
+                        <button onclick="openImageModal('${imageUrl}')" style="${BTN}">
+                            ${SVG.eye} View
+                        </button>
+                        <button onclick="openUploadModal()" style="${BTN}">
+                            ${SVG.upload} Replace
+                        </button>
+                    </div>
+                </div>`;
+            }
 
-                const subtotal = dailyRate * mov.quantity * days;
+            // Items
+            const startDate = new Date(rental.rental_start_date);
+            const endDate = new Date(rental.rental_end_date);
+            const days = Math.max(1, Math.ceil((endDate - startDate) / 86400000));
 
-                return `
-        <div class="border-l-4 border-blue-400 bg-blue-50 rounded-lg p-4">
-            <div class="flex justify-between items-start mb-3">
-                <div>
-                    <p class="font-semibold text-gray-900">${toolName}</p>
-                    <p class="text-sm text-gray-500">Quantity: ${mov.quantity}</p>
-                </div>
-                <span class="text-lg font-bold text-blue-600">${formatCurrency(subtotal)}</span>
-            </div>
-            <div class="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                    <p class="text-gray-500">Daily Rate:</p>
-                    <p class="font-semibold text-gray-900">${formatCurrency(dailyRate)}</p>
-                </div>
-                <div>
-                    <p class="text-gray-500">Duration:</p>
-                    <p class="font-semibold text-gray-900">${days} days</p>
-                </div>
-            </div>
-        </div>
-    `;
-            }).join('') || '<p class="text-gray-400 text-sm">No items found.</p>';
+            const exportUrl = '{{ route('rentals.export') }}' + '?rental_id=' + rentalId;
+            document.getElementById('btn-export-excel').href = exportUrl;
+
+            el('modal-items-title').textContent = `Rental Items (${movements.length})`;
+            el('modal-items-list').innerHTML = movements.length ?
+                movements.map(mov => {
+                    const toolName = mov.tool?.name ?? mov.tool_id;
+                    const dailyRate = mov.tool?.daily_rate ?? 0;
+                    const subtotal = dailyRate * mov.quantity * days;
+                    return `
+                <div class="border-l-4 border-blue-400 bg-blue-50 rounded-lg p-4">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="font-semibold text-gray-900">${toolName}</p>
+                            <p class="text-sm text-gray-500">Quantity: ${mov.quantity}</p>
+                        </div>
+                        <span class="text-lg font-bold text-blue-600">${fmt.currency(subtotal)}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <p class="text-gray-500">Daily Rate:</p>
+                            <p class="font-semibold text-gray-900">${fmt.currency(dailyRate)}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Duration:</p>
+                            <p class="font-semibold text-gray-900">${days} days</p>
+                        </div>
+                    </div>
+                </div>`;
+                }).join('') :
+                '<p class="text-gray-400 text-sm">No items found.</p>';
 
             // Summary
-            document.getElementById('modal-total-amount').textContent = formatCurrency(rental.total_price);
-            document.getElementById('modal-total-items').textContent = movements.length;
+            el('modal-total-amount').textContent = fmt.currency(rental.total_price);
+            el('modal-total-items').textContent = movements.length;
 
-            // Tampilkan modal
-            document.getElementById('rentalModal').classList.remove('hidden');
+            // Show modal
+            el('rentalModal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
 
         function closeRentalModal() {
-            document.getElementById('rentalModal').classList.add('hidden');
+            el('rentalModal').classList.add('hidden');
             document.body.style.overflow = '';
         }
 
-        function handleBackdropClick(e) {
-            if (e.target === document.getElementById('rentalModal')) closeRentalModal();
+        {{-- ─── Upload Modal ───────────────────────────────────────────── --}}
+
+        function openUploadModal() {
+            el('paymentProofInput').value = '';
+            el('uploadPreviewWrapper').classList.add('hidden');
+            el('uploadError').classList.add('hidden');
+            el('uploadProofModal').classList.remove('hidden');
         }
 
+        function closeUploadModal() {
+            el('uploadProofModal').classList.add('hidden');
+        }
+
+        function previewUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                el('uploadPreviewImg').src = e.target.result;
+                el('uploadPreviewWrapper').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function submitPaymentProof() {
+            const input = el('paymentProofInput');
+            const errorEl = el('uploadError');
+            errorEl.classList.add('hidden');
+
+            if (!input.files[0]) {
+                errorEl.textContent = 'Please select an image first.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('payment_proof', input.files[0]);
+            formData.append('_token', '{{ csrf_token() }}');
+
+            try {
+                const res = await fetch(`/transactions/rentals/${currentRentalId}/upload-proof`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: formData,
+                });
+
+                console.log('[upload] status:', res.status, res.ok);
+
+                const data = await res.json();
+
+                console.log('[upload] response:', data);
+
+                if (data.success) {
+                    const rental = rentalsData.find(r => r.id === currentRentalId);
+                    console.log('[upload] rental found:', rental);
+                    if (rental) {
+                        rental.payment_proof_image = data.path.replace('/storage/', '');
+                        rental.payment_status = 'paid';
+                        console.log('[upload] rental updated:', rental.payment_proof_image, rental.payment_status);
+                    }
+                    closeUploadModal();
+                    openRentalModal(currentRentalId);
+                } else {
+                    errorEl.textContent = data.message ?? 'Upload failed.';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (e) {
+                console.error('[upload] catch error:', e);
+                errorEl.textContent = 'Network error: ' + e.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        {{-- ─── Image Fullscreen Modal ─────────────────────────────────── --}}
+
+        function openImageModal(src) {
+            el('imageModalImg').src = src;
+            el('imageModal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            el('imageModal').classList.add('hidden');
+        }
+
+        {{-- ─── Global Event Listeners ─────────────────────────────────── --}}
+        // Backdrop click — rental modal
+        el('rentalModal').addEventListener('click', e => {
+            if (e.target === el('rentalModal')) closeRentalModal();
+        });
+
+        // Escape key
         document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') closeRentalModal();
+            if (e.key !== 'Escape') return;
+            closeImageModal();
+            closeUploadModal();
+            closeRentalModal();
         });
     </script>
 @endsection
