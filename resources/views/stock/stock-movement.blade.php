@@ -61,6 +61,7 @@
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Status</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Type</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Quantity</th>
+                        <th class="px-6 py-3 text-left font-semibold text-gray-700">Transaction Reference</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Reference</th>
                         <th class="px-6 py-3 text-left font-semibold text-gray-700">Last Updated</th>
                     </tr>
@@ -101,6 +102,7 @@
                                     {{ $qtyPrefix }}{{ $movement->quantity }}
                                 </span>
                             </td>
+                            <td class="px-6 py-4 text-gray-600">{{ $movement->reference_invoice_id ?? 'N/A' }}</td>
                             <td class="px-6 py-4 text-gray-600">{{ $movement->reference_id }}</td>
                             <td class="px-6 py-4">{{ $formattedDateLastUpdated }}</td>
                         </tr>

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Exports\RentalsExport;
+use App\Exports\RentalsRecapExport;
 use App\Models\Customers;
+use App\Models\Driver;
 use App\Models\Rentals;
 use App\Models\Stock;
 use App\Models\StockMovement;
@@ -22,6 +24,7 @@ class RentalsController extends Controller
         $perPage = in_array($request->per_page, [10, 50, 100]) ? $request->per_page : 10;
 
         $customers = Customers::all();
+        $drivers = Driver::all();
         $allRentals = Rentals::all();
         $rentals = Rentals::with('customer')->paginate($perPage);
 
@@ -47,6 +50,12 @@ class RentalsController extends Controller
             $customersById[$c->id] = $c;
         }
 
+        // Buat lookup drivers by id untuk modal
+        $driversById = [];
+        foreach ($drivers as $d) {
+            $driversById[$d->id] = $d;
+        }
+
         // Buat lookup movements by rental id untuk modal
         $movementsByRentalId = [];
         foreach ($rentals->items() as $rental) {
@@ -54,7 +63,7 @@ class RentalsController extends Controller
             $movementsByRentalId[$rental->id] = collect($ids)->map(fn($id) => $movements->get($id))->filter()->values();
         }
 
-        return view('rentals.rentals', compact('rentals', 'customersById', 'movementsByRentalId', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
+        return view('rentals.rentals', compact('rentals', 'customersById', 'driversById', 'movementsByRentalId', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
     }
 
     public function uploadPaymentProof(Request $request, $rentalId)
@@ -160,6 +169,7 @@ class RentalsController extends Controller
 
             $movement = new StockMovement();
             $movement->id = (string) Str::uuid();
+            $movement->reference_invoice_id = $invoiceNum;
             $movement->reference_id = $referenceId;
             $movement->warehouse_id = $warehouse->id;
             $movement->tool_id = $item['toolId'];
@@ -203,14 +213,31 @@ class RentalsController extends Controller
             ->with('success', "Rental created! Invoice: {$invoiceNum}");
     }
 
+    // Controller
     public function rentalExport(Request $request)
     {
-        $rental   = Rentals::findOrFail($request->rental_id);
+        $request->validate(['rental_id' => 'required|string|exists:rentals,id']);
+        $rental = \App\Models\Rentals::findOrFail($request->rental_id);
+        $filename = 'Rekap-Stock-' . str_replace('/', '-', $rental->invoice_number) . '.xlsx';
+
+        return Excel::download(new RentalsExport($request->rental_id), $filename);
+    }
+    
+
+    public function rentalStockExport(Request $request)
+    {
+        $request->validate(['rental_id' => 'required|string|exists:rentals,id']);
+        $rental = \App\Models\Rentals::findOrFail($request->rental_id);
+        $filename = 'Rekap-Stock-' . str_replace('/', '-', $rental->invoice_number) . '.xlsx';
+
+        return Excel::download(new RentalsExport($request->rental_id), $filename);
+    }
+
+    public function rentalRecapExport(Request $request)
+    {
+        $rental = Rentals::findOrFail($request->rental_id);
         $filename = 'Rekap-Tagihan-' . str_replace('/', '-', $rental->invoice_number) . '.xlsx';
 
-        return Excel::download(
-            new RentalsExport($request->rental_id),
-            $filename
-        );
+        return Excel::download(new RentalsRecapExport($request->rental_id), $filename);
     }
 }

@@ -14,7 +14,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Font;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class RentalsExport implements FromArray, WithEvents, WithTitle
+class RentalsRecapExport implements FromArray, WithEvents, WithTitle
 {
     protected Rentals $rental;
     protected $movements;

@@ -20,4 +20,9 @@ class Driver extends Model
     {
         return $this->hasMany(Shipping::class, 'driver_id', 'id');
     }
+
+    public function rentals()
+    {
+        return $this->hasMany(Rentals::class, 'driver_id', 'id');
+    }
 }

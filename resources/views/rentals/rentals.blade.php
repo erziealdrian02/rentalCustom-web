@@ -81,7 +81,8 @@
                         <tr class="hover:bg-gray-50 transition cursor-pointer"
                             onclick="openRentalModal('{{ $rental->id }}')">
                             <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $rental->invoice_number }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-600">{{ $rental->customer->name ?? 'N/A' }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">{{ $rental->customer->name ?? 'N/A' }} -
+                                {{ $rental->driver->name ?? 'N/A' }}</td>
                             <td class="px-4 py-3 text-sm text-gray-600">
                                 <span class="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
                                     {{ $toolsCount }} tool{{ $toolsCount > 1 ? 's' : '' }}
@@ -197,7 +198,7 @@
             <div class="px-6 pb-6 space-y-5">
 
                 {{-- Customer Info + Rental Status --}}
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {{-- Customer Information --}}
                     <div class="border border-gray-200 rounded-xl p-4">
                         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Customer Information
@@ -205,6 +206,15 @@
                         <p id="modal-customer-name" class="text-base font-bold text-gray-900"></p>
                         <p id="modal-customer-email" class="text-sm text-gray-500 mt-1"></p>
                         <p id="modal-customer-phone" class="text-sm text-gray-500"></p>
+                    </div>
+
+                    {{-- Driver Information --}}
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Driver Information
+                        </p>
+                        <p id="modal-driver-name" class="text-base font-bold text-gray-900"></p>
+                        <p id="modal-driver-email" class="text-sm text-gray-500 mt-1"></p>
+                        <p id="modal-driver-phone" class="text-sm text-gray-500"></p>
                     </div>
 
                     {{-- Rental Status --}}
@@ -246,35 +256,37 @@
                     </div>
                 </div>
 
-                {{-- Action Buttons --}}
                 <div class="flex flex-col sm:flex-row gap-3 pt-1">
-                    <div class="flex flex-col sm:flex-row gap-3 pt-1">
 
-                        {{-- Export Excel --}}
-                        <a id="btn-export-excel" href="#"
-                            class="flex-1 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition font-medium flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                            </svg>
-                            Export Excel
-                        </a>
+                    {{-- Export Excel --}}
+                    <a id="btn-export-excel" href="#"
+                        class="flex-1 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition font-medium flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                        </svg>
+                        Export Excel
+                    </a>
 
-                        {{-- Print --}}
-                        <button
-                            class="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                            </svg>
-                            Print Details
-                        </button>
+                    <a id="btn-stock-rekap" href="#"
+                        class="flex-1 bg-emerald-600 text-white py-3 rounded-xl hover:bg-emerald-700 transition font-medium flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Rekap Stock
+                    </a>
 
-                        <button onclick="closeRentalModal()"
-                            class="flex-1 bg-gray-100 text-gray-800 py-3 rounded-xl hover:bg-gray-200 transition font-medium">
-                            Close
-                        </button>
-                    </div>
+                    {{-- Print --}}
+                    <button
+                        class="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        Print Details
+                    </button>
+
                     <button onclick="closeRentalModal()"
                         class="flex-1 bg-gray-100 text-gray-800 py-3 rounded-xl hover:bg-gray-200 transition font-medium">
                         Close
@@ -348,6 +360,7 @@
         {{-- ─── Data dari server ──────────────────────────────────────── --}}
         const rentalsData = @json($rentals->items());
         const customersById = @json($customersById);
+        const driversById = @json($driversById);
         const movementsByRentalId = @json($movementsByRentalId);
 
         let currentRentalId = null;
@@ -381,6 +394,7 @@
             currentRentalId = rentalId;
 
             const customer = customersById[rental.customer_id] ?? null;
+            const driver = driversById[rental.driver_id] ?? null;
             const movements = movementsByRentalId[rentalId] ?? [];
 
             // Header
@@ -391,6 +405,11 @@
             el('modal-customer-name').textContent = customer?.name ?? 'N/A';
             el('modal-customer-email').textContent = customer?.email ?? '';
             el('modal-customer-phone').textContent = customer?.phone ?? '';
+
+            // Driver (jika ada)
+            el('modal-driver-name').textContent = driver?.name ?? 'N/A';
+            el('modal-driver-email').textContent = driver?.email ?? '';
+            el('modal-driver-phone').textContent = driver?.phone ?? '';
 
             // Rental status badge
             const statusClasses = {

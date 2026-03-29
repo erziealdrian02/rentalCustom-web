@@ -126,7 +126,7 @@ class ShippingController extends Controller
         // Summary counts
         $totalShipments = $shippings->count();
         $delivered = $shippings->where('delivery_status', 'Delivered')->count();
-        $onTrack = $shippings->where('delivery_status', 'On Track')->count();
+        $onTrack = $shippings->where('delivery_status', 'Pending')->count();
         $pending = $shippings->where('delivery_status', 'Pending')->count();
 
         return view('shipping.shippingList', compact('shippings', 'rentals', 'drivers', 'warehouses', 'movements', 'totalShipments', 'delivered', 'onTrack', 'pending'));
@@ -211,7 +211,7 @@ class ShippingController extends Controller
         $shipping->rental_id = json_encode($rentalIds);
         $shipping->from_location = json_encode($fromLocation);
         $shipping->to_location = $toLocation;
-        $shipping->delivery_status = 'On Track';
+        $shipping->delivery_status = 'Pending';
         // dd($rentalItems);
 
         $shipping->save();
@@ -224,7 +224,7 @@ class ShippingController extends Controller
 
             $rental->delivery_id = $deliveryNumber;
             $rental->driver_id = $request->driverId;
-            $rental->rental_status = 'On Track';
+            $rental->rental_status = 'Pending';
 
             $rental->save();
         }
@@ -240,7 +240,7 @@ class ShippingController extends Controller
 
         // Active: pending & in_transit
         $activeShippings = Shipping::where('driver_id', $id)
-            ->whereIn('delivery_status', ['pending', 'in_transit'])
+            ->whereIn('delivery_status', ['Pending','On Track'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -317,7 +317,7 @@ class ShippingController extends Controller
 
         $shipping->save();
 
-        return redirect()->route('shipping.driver.arrival', $delivery_number)->with('success', 'Departure confirmed! Delivery is now in On Track.');
+        return redirect()->route('shipping.driver.arrival', $delivery_number)->with('success', 'Departure confirmed! Delivery is now in Pending.');
     }
 
     public function shippingDriverArrival($delivery_number)

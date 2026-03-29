@@ -98,7 +98,7 @@
                             </div>
                             <span
                                 class="text-xs font-semibold px-3 py-1 rounded-full {{ $isDeparted ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700' }}">
-                                {{ $isDeparted ? '🚚 In Transit' : '⏳ Pending' }}
+                                {{ $isDeparted ? '🚚 On Track' : '⏳ Pending' }}
                             </span>
                         </div>
 

@@ -63,7 +63,8 @@
                                         onchange="updateDailyRate()">
                                         <option value="">Select Tool</option>
                                         @foreach ($getTools as $tool)
-                                            <option value="{{ $tool['id_tools'] }}">{{ $tool['name'] }} ({{ $tool['code_tools'] }})
+                                            <option value="{{ $tool['id_tools'] }}">{{ $tool['name'] }}
+                                                ({{ $tool['code_tools'] }})
                                             </option>
                                         @endforeach
                                     </select>
@@ -247,10 +248,7 @@
 
         // ─── Format currency ─────────────────────────────────────
         function fmt(amount) {
-            return '$' + parseFloat(amount).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
+            return 'Rp ' + parseFloat(amount).toLocaleString('id-ID');
         }
 
         // ─── Update semua UI ─────────────────────────────────────

@@ -21,4 +21,9 @@ class Rentals extends Model
     {
         return $this->belongsTo(Customers::class, 'customer_id');
     }
+
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class, 'driver_id');
+    }
 }

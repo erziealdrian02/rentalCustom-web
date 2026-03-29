@@ -156,6 +156,7 @@ class ReturnsController extends Controller
                 $stockMOvement = new StockMovement();
                 $stockMOvement->id = $movId;
                 $stockMOvement->reference_id = $returnInvoice;
+                $stockMOvement->reference_invoice_id = $rental->invoice_number;
                 $stockMOvement->warehouse_id = $warehouseId;
                 $stockMOvement->tool_id = $toolId;
                 $stockMOvement->movement_type = 'Waiting';

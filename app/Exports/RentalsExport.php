@@ -3,40 +3,29 @@
 namespace App\Exports;
 
 use App\Models\Rentals;
-use App\Models\StockMovement;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Font;
+use PhpOffice\PhpSpreadsheet\Style\Font as SpFont;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class RentalsExport implements FromArray, WithEvents, WithTitle
 {
     protected Rentals $rental;
-    protected $movements;
-    protected $customer;
-    protected int $startDataRow = 10;
 
     public function __construct(string $rentalId)
     {
         $this->rental = Rentals::with('customer')->findOrFail($rentalId);
-        $this->customer = $this->rental->customer;
-
-        $ids = json_decode($this->rental->movement_id, true) ?? [];
-        $this->movements = StockMovement::with('tool')->whereIn('id', $ids)->get();
     }
 
     public function title(): string
     {
-        return 'Rekapitulasi Tagihan';
+        return 'Invoice';
     }
-
-    // FromArray — hanya mengembalikan baris kosong,
-    // semua konten diisi via AfterSheet
     public function array(): array
     {
         return [['']];
@@ -45,316 +34,288 @@ class RentalsExport implements FromArray, WithEvents, WithTitle
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function (AfterSheet $event) {
-                $sheet = $event->sheet->getDelegate();
-                $this->buildSheet($sheet);
-            },
+            AfterSheet::class => fn(AfterSheet $e) => $this->buildSheet($e->sheet->getDelegate()),
         ];
     }
 
-    // ──────────────────────────────────────────────────────────
-    private function buildSheet(Worksheet $sheet): void
+    private function buildSheet(Worksheet $ws): void
     {
         $rental = $this->rental;
-        $customer = $this->customer;
-        $movements = $this->movements;
+        $customer = $rental->customer;
 
-        $startDate = \Carbon\Carbon::parse($rental->rental_start_date);
-        $endDate = \Carbon\Carbon::parse($rental->rental_end_date);
+        $startDate = \Carbon\Carbon::parse($rental->rental_start_date)->translatedFormat('d F Y');
+        $endDate = \Carbon\Carbon::parse($rental->rental_end_date)->translatedFormat('d F Y');
+        $createdAt = \Carbon\Carbon::parse($rental->created_at)->translatedFormat('d F Y');
 
-        // ── Column widths ────────────────────────────────────
-        $widths = ['A' => 22, 'B' => 13, 'C' => 13, 'D' => 7, 'E' => 8, 'F' => 8, 'G' => 4, 'H' => 14, 'I' => 4, 'J' => 16];
-        foreach ($widths as $col => $w) {
-            $sheet->getColumnDimension($col)->setWidth($w);
-        }
-
-        // ── Styles helper ─────────────────────────────────────
         $thin = ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']];
         $thick = ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => '000000']];
-        $allBorder = ['allBorders' => $thin];
-        $thickBorder = ['outline' => $thick];
-
         $IDR = '#,##0';
 
-        // ── ROW 1: Judul ──────────────────────────────────────
-        $sheet->mergeCells('A1:L1');
-        $sheet->setCellValue('A1', 'REKAPITULASI TAGIHAN');
-        $sheet->getStyle('A1')->applyFromArray([
-            'font' => ['bold' => true, 'size' => 13, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        // ── Column widths ─────────────────────────────────────
+        $ws->getColumnDimension('A')->setWidth(3);
+        $ws->getColumnDimension('B')->setWidth(10);
+        $ws->getColumnDimension('C')->setWidth(50);
+        $ws->getColumnDimension('D')->setWidth(3);
+        $ws->getColumnDimension('E')->setWidth(14);
+        $ws->getColumnDimension('F')->setWidth(18);
+
+        // ── Helper ────────────────────────────────────────────
+        $set = function (int $row, int $col, $value = '', bool $bold = false, int $size = 10, string $color = '000000', ?string $bg = null, string $halign = 'left', bool $wrap = false, ?string $numFmt = null, bool $italic = false, ?string $underline = null, ?array $border = null) use ($ws, $thin) {
+            $c = $ws->getCellByColumnAndRow($col, $row);
+            if ($c->isInMergeRange()) {
+                return;
+            }
+            $c->setValue($value);
+            $font = $ws->getStyleByColumnAndRow($col, $row)->getFont();
+            $font->setName('Arial')->setSize($size)->setBold($bold)->setItalic($italic);
+            $font->getColor()->setRGB($color);
+            if ($underline) {
+                $font->setUnderline($underline);
+            }
+            $ws->getStyleByColumnAndRow($col, $row)->getAlignment()->setHorizontal($halign)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText($wrap);
+            if ($bg) {
+                $ws->getStyleByColumnAndRow($col, $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($bg);
+            }
+            if ($numFmt) {
+                $ws->getStyleByColumnAndRow($col, $row)->getNumberFormat()->setFormatCode($numFmt);
+            }
+            if ($border !== null) {
+                $ws->getStyleByColumnAndRow($col, $row)->getBorders()->applyFromArray($border);
+            }
+        };
+
+        $mrg = fn(int $r1, int $c1, int $r2, int $c2) => $ws->mergeCellsByColumnAndRow($c1, $r1, $c2, $r2);
+
+        $rh = fn(int $row, float $h) => $ws->getRowDimension($row)->setRowHeight($h);
+
+        $bdrAll = ['allBorders' => $thin];
+
+        // ══════════════════════════════════════════════════════
+        // KOP SURAT
+        // ══════════════════════════════════════════════════════
+
+        // ROW 1: Nama perusahaan
+        $mrg(1, 2, 1, 4);
+        $set(1, 2, 'PT. TIANG KARUNIA NUSANTARA', true, 11, '000000', null, 'left', false, null, false, SpFont::UNDERLINE_SINGLE);
+        $rh(1, 18);
+
+        $rh(2, 6);
+
+        // ROW 3-4: Sub-judul
+        $mrg(3, 2, 3, 4);
+        $set(3, 2, 'DISTRIBUTION & GENERAL CONTRACTOR', true, 9);
+        $rh(3, 14);
+
+        $mrg(4, 2, 4, 4);
+        $set(4, 2, 'Import & Export', false, 9);
+        $rh(4, 13);
+
+        // ROW 5: Alamat
+        $mrg(5, 2, 5, 6);
+        $set(5, 2, 'Jl. Letjend TNI ZA Maulani RT. 021 Rw. 000 Sungainangka, ' . 'Balikpapan Selatan Kota Balikpapan, Kalimantan Timur', false, 9, '000000', null, 'left', true);
+        $rh(5, 13);
+
+        // ROW 6: Garis bawah kop
+        for ($c = 2; $c <= 6; $c++) {
+            $ws->getStyleByColumnAndRow($c, 6)
+                ->getBorders()
+                ->applyFromArray(['bottom' => $thin]);
+        }
+        $rh(6, 6);
+
+        // ══════════════════════════════════════════════════════
+        // JUDUL INVOICE
+        // ══════════════════════════════════════════════════════
+
+        // ROW 7: INVOICE
+        $mrg(7, 2, 7, 6);
+        $set(7, 2, 'INVOICE', true, 14, '000000', null, 'center');
+        $rh(7, 22);
+
+        // ROW 8: Nomor invoice
+        $mrg(8, 2, 8, 6);
+        $set(8, 2, 'No : ' . $rental->invoice_number, false, 11, '000000', null, 'center');
+        $rh(8, 18);
+
+        // ROW 9: Tanggal (kanan)
+        $mrg(9, 5, 9, 6);
+        $set(9, 5, 'Tanggal : ' . $createdAt, false, 10, '000000', null, 'right');
+        $rh(9, 14);
+
+        $rh(10, 6);
+
+        // ROW 11-12: Kepada
+        $mrg(11, 2, 11, 4);
+        $set(11, 2, 'Kepada Yth,');
+        $rh(11, 14);
+
+        $mrg(12, 2, 12, 4);
+        $set(12, 2, $customer->name ?? 'N/A');
+        $rh(12, 14);
+
+        $rh(13, 6);
+        $rh(14, 6);
+
+        // ══════════════════════════════════════════════════════
+        // TABEL INVOICE
+        // ══════════════════════════════════════════════════════
+
+        // ROW 15: Header
+        $set(15, 2, 'PO', true, 10, '000000', null, 'center', false, null, false, null, $bdrAll);
+        $set(15, 3, 'URAIAN', true, 10, '000000', null, 'center', false, null, false, null, $bdrAll);
+        $mrg(15, 5, 15, 6);
+        $set(15, 5, 'JUMLAH', true, 10, '000000', null, 'center', false, null, false, null, $bdrAll);
+        // border kolom D (spacer di tengah)
+        $ws->getStyleByColumnAndRow(4, 15)->getBorders()->applyFromArray($bdrAll);
+        $rh(15, 20);
+
+        // ROW 16: Nomor PO + Nama proyek
+        $set(16, 2, '1', false, 10, '000000', null, 'center', false, null, false, null, $bdrAll);
+        $mrg(16, 3, 16, 4);
+        $set(16, 3, 'Proyek : ' . ($rental->project_name ?? 'Pembangunan Penataan Kawasan Olahraga Dan Ruang Terbuka Hijau'), false, 10, '000000', null, 'left', true, null, false, null, $bdrAll);
+        $set(16, 5, '', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $set(16, 6, '', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $rh(16, 18);
+
+        // ROW 17: Periode + Harga
+        $set(17, 2, '', false, 10, '000000', null, 'center', false, null, false, null, $bdrAll);
+        $mrg(17, 3, 17, 4);
+        $set(17, 3, 'Periode Sewa : ' . $startDate . ' s/d ' . $endDate, false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+        $set(17, 5, 'Rp', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $set(17, 6, $rental->total_price, false, 10, '000000', null, 'right', false, $IDR, false, null, $bdrAll);
+        $rh(17, 18);
+
+        // ROW 18-22: baris kosong
+        for ($r = 18; $r <= 22; $r++) {
+            $set($r, 2, '', false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+            $mrg($r, 3, $r, 4);
+            $set($r, 3, '', false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+            $set($r, 5, '', false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+            $set($r, 6, '', false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+            $rh($r, 14);
+        }
+
+        // ROW 23: Sub-total
+        $set(23, 2, '', false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+        $mrg(23, 3, 23, 4);
+        $set(23, 3, '.', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $set(23, 5, 'Rp', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $set(23, 6, $rental->total_price, false, 10, '000000', null, 'right', false, $IDR, false, null, $bdrAll);
+        $rh(23, 18);
+
+        // ROW 24: DPP 11/12
+        $set(24, 2, '', false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+        $mrg(24, 3, 24, 4);
+        $set(24, 3, 'DPP 11/12', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $set(24, 5, 'Rp', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $ws->getCellByColumnAndRow(6, 24)->setValue('=F23*11/12');
+        $ws->getStyleByColumnAndRow(6, 24)->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 10],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders' => ['allBorders' => $thin],
+            'numberFormat' => ['formatCode' => $IDR],
         ]);
-        $sheet->getRowDimension(1)->setRowHeight(24);
+        $rh(24, 18);
 
-        // ── ROW 2-3: Kepada / Perusahaan ─────────────────────
-        $sheet->mergeCells('A2:L2');
-        $sheet->setCellValue('A2', 'Kepada Yth,');
-        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(10)->setName('Arial');
+        // ROW 25: PPN 12%
+        $set(25, 2, '', false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+        $mrg(25, 3, 25, 4);
+        $set(25, 3, 'PPN 12 %', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $set(25, 5, 'Rp', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $ws->getCellByColumnAndRow(6, 25)->setValue('=F24*12/100');
+        $ws->getStyleByColumnAndRow(6, 25)->applyFromArray([
+            'font' => ['name' => 'Arial', 'size' => 10],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders' => ['allBorders' => $thin],
+            'numberFormat' => ['formatCode' => $IDR],
+        ]);
+        $rh(25, 18);
 
-        $sheet->mergeCells('A3:L3');
-        $sheet->setCellValue('A3', '' . ($customer->name ?? 'Nama Customer Tidak Ditemukan') . ' ' . ($customer->address ?? 'Alamat Customer Tidak Ditemukan') . "\n" . ($customer->city ?? 'Kota Customer Tidak Ditemukan'));
-        $sheet->getStyle('A3')->getFont()->setBold(true)->setSize(10)->setName('Arial');
+        // ROW 26: GRAND TOTAL
+        $set(26, 2, '', false, 10, '000000', null, 'left', false, null, false, null, $bdrAll);
+        $mrg(26, 3, 26, 4);
+        $set(26, 3, 'GRAND TOTAL', true, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $set(26, 5, 'Rp', false, 10, '000000', null, 'right', false, null, false, null, $bdrAll);
+        $ws->getCellByColumnAndRow(6, 26)->setValue('=F23+F25');
+        $ws->getStyleByColumnAndRow(6, 26)->applyFromArray([
+            'font' => ['name' => 'Arial', 'bold' => true, 'size' => 10],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders' => ['allBorders' => $thin],
+            'numberFormat' => ['formatCode' => $IDR],
+        ]);
+        $rh(26, 18);
 
-        // ── ROW 4: spacer ─────────────────────────────────────
-        $sheet->getRowDimension(4)->setRowHeight(4);
+        // ROW 27-28: Terbilang
+        $mrg(27, 2, 27, 6);
+        $set(27, 2, 'Terbilang :', false, 10, '000000', null, 'left', false, null, false, null, ['top' => $thin, 'left' => $thin, 'right' => $thin]);
+        $rh(27, 14);
 
-        // ── ROW 5-6: Proyek & Periode ─────────────────────────
-        $sheet->mergeCells('A5:L5');
-        $sheet->setCellValue('A5', 'Proyek : ' . ($rental->project_name ?? 'Pembangunan Penataan Kawasan Olahraga Dan Ruang Terbuka Hijau'));
-        $sheet->getStyle('A5')->getFont()->setSize(10)->setName('Arial');
+        $mrg(28, 2, 28, 6);
+        $set(28, 2, '# ' . ($rental->amount_in_words ?? 'Seratus Tujuh Puluh Tiga Juta Sembilan Ratus Tujuh Puluh Delapan Ribu Tujuh Puluh Satu Rupiah') . ' #', false, 9, '000000', null, 'center', true, null, false, null, ['bottom' => $thin, 'left' => $thin, 'right' => $thin]);
+        $rh(28, 16);
 
-        $sheet->mergeCells('A6:L6');
-        $sheet->setCellValue('A6', 'Periode Sewa : ' . $startDate->format('d F Y') . ' s/d ' . $endDate->format('d F Y'));
-        $sheet->getStyle('A6')->getFont()->setSize(10)->setName('Arial');
+        // Outline tebal area tabel
+        $tableStyle = $ws->getStyle('B15:F28');
+        $tableStyle->getBorders()->applyFromArray(['outline' => $thick]);
 
-        $sheet->getRowDimension(7)->setRowHeight(6);
+        $rh(29, 8);
 
-        // ── ROW 8-9: Table Header ─────────────────────────────
-        $hdrFill = ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D9D9D9']];
-        $hdrFont = ['bold' => true, 'size' => 9, 'name' => 'Arial'];
-        $center = ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER, 'wrapText' => true];
+        // ══════════════════════════════════════════════════════
+        // FOOTER
+        // ══════════════════════════════════════════════════════
 
-        $headers8 = [
-            'A8:A9' => 'Nama Barang',
-            'B8:C8' => 'Periode Sewa',
-            'D8:D9' => "Hari\n(D)",
-            'E8:E9' => "Bulan\n(M)",
-            'F8:F9' => "Qty\n(Q)",
-            'G8:H9' => 'Harga  (P)',
-            'I8:J9' => 'Jumlah(DxQxP/M)',
-            // 'K8:L9' => '',
+        // ROW 30: Info transfer
+        $mrg(30, 2, 30, 6);
+        $set(30, 2, 'Pembayaran Untuk Invoice ini dimohon ditransfer ke rekening :');
+        $rh(30, 14);
+
+        // ROW 31-33: Bank
+        $bankInfo = [
+            31 => ['Nama Bank', ': BNI'],
+            32 => ['Atas Nama', ': PT. TIANG KARUNIA NUSANTARA'],
+            33 => ['No Rek', ': 181-909-714-3'],
         ];
-
-        foreach ($headers8 as $range => $text) {
-            $sheet->mergeCells($range);
-            [$startCell] = explode(':', $range);
-            $sheet->setCellValue($startCell, $text);
-            $sheet->getStyle($range)->applyFromArray([
-                'font' => $hdrFont,
-                'fill' => $hdrFill,
-                'alignment' => $center,
-                'borders' => $allBorder,
-            ]);
+        foreach ($bankInfo as $r => [$label, $val]) {
+            $set($r, 2, $label);
+            $mrg($r, 3, $r, 6);
+            $set($r, 3, $val);
+            $rh($r, 14);
         }
 
-        // Sub-header row 9
-        foreach (['B9' => 'Awal', 'C9' => 'Akhir'] as $cell => $text) {
-            $sheet->setCellValue($cell, $text);
-            $sheet->getStyle($cell)->applyFromArray([
-                'font' => $hdrFont,
-                'fill' => $hdrFill,
-                'alignment' => $center,
-                'borders' => $allBorder,
-            ]);
+        $rh(34, 8);
+
+        // ROW 35-36: Note
+        $mrg(35, 2, 35, 6);
+        $set(35, 2, 'Note : Apabila Pembayaran dilakukan ke rekening selain tersebut diatas,');
+        $rh(35, 14);
+
+        $mrg(36, 2, 36, 6);
+        $set(36, 2, '        maka pembayaran dianggap belum lunas.', false, 10, '000000', null, 'left', false, null, true);
+        $rh(36, 14);
+
+        // ROW 37-38: Hormat Kami
+        $mrg(37, 5, 37, 6);
+        $set(37, 5, 'Hormat Kami,', false, 10, '000000', null, 'right');
+        $rh(37, 14);
+
+        $mrg(38, 5, 38, 6);
+        $set(38, 5, 'PT. TIANG KARUNIA NUSANTARA', true, 10, '000000', null, 'right');
+        $rh(38, 14);
+
+        for ($r = 39; $r <= 43; $r++) {
+            $rh($r, 14);
         }
 
-        $sheet->getRowDimension(8)->setRowHeight(30);
-        $sheet->getRowDimension(9)->setRowHeight(18);
+        $mrg(44, 5, 44, 6);
+        $set(44, 5, 'Raindi Andreas', true, 10, '000000', null, 'right', false, null, false, SpFont::UNDERLINE_SINGLE);
+        $rh(44, 14);
 
-        // ── DATA ROWS ─────────────────────────────────────────
-        $r = $this->startDataRow;
-        foreach ($movements as $mov) {
-            $days = max(1, $startDate->diffInDays($endDate));
-            $dailyRate = $mov->tool->daily_rate ?? 0;
-            $toolName = $mov->tool->name ?? $mov->tool_id;
+        $mrg(45, 5, 45, 6);
+        $set(45, 5, 'Direktur', false, 10, '000000', null, 'right');
+        $rh(45, 14);
 
-            $sheet->getRowDimension($r)->setRowHeight(16);
-
-            $sheet->setCellValue("A{$r}", $toolName);
-            $sheet->setCellValue("B{$r}", $startDate->format('d-M-y'));
-            $sheet->setCellValue("C{$r}", $endDate->format('d-M-y'));
-            $sheet->setCellValue("D{$r}", $days);
-            $sheet->setCellValue("E{$r}", 30);
-            $sheet->setCellValue("F{$r}", $mov->quantity);
-            $sheet->setCellValue("G{$r}", 'Rp');
-            $sheet->setCellValue("H{$r}", $dailyRate);
-            $sheet->setCellValue("I{$r}", 'Rp');
-            $sheet->setCellValue("J{$r}", "=D{$r}/E{$r}*F{$r}*H{$r}");
-            // $sheet->setCellValue("K{$r}", 'Rp');
-            // $sheet->setCellValue("L{$r}", "=D{$r}/E{$r}*F{$r}*H{$r}");
-
-            $sheet->getStyle("A{$r}:J{$r}")->applyFromArray([
-                'font' => ['size' => 9, 'name' => 'Arial'],
-                'borders' => $allBorder,
-            ]);
-            $sheet
-                ->getStyle("B{$r}:C{$r}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet
-                ->getStyle("D{$r}:F{$r}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet
-                ->getStyle("G{$r}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet
-                ->getStyle("H{$r}")
-                ->getNumberFormat()
-                ->setFormatCode($IDR);
-            $sheet
-                ->getStyle("H{$r}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-            $sheet
-                ->getStyle("I{$r}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet
-                ->getStyle("J{$r}")
-                ->getNumberFormat()
-                ->setFormatCode($IDR);
-            $sheet
-                ->getStyle("J{$r}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-
-            $r++;
-        }
-
-        $lastDataRow = $r - 1;
-
-        // ── SUMMARY: TOTAL / DPP / PPN / GRAND TOTAL ─────────
-        $summaries = [['TOTAL', "=SUM(J{$this->startDataRow}:J{$lastDataRow})", 'F2F2F2'], ['DPP 11/12%', '=J' . ($lastDataRow + 1) . '*11/12', 'F2F2F2'], ['PPN 12%', '=J' . ($lastDataRow + 2) . '*12/100', 'F2F2F2'], ['GRAND TOTAL', '=J' . ($lastDataRow + 2) . '+J' . ($lastDataRow + 3), 'C6EFCE']];
-
-        foreach ($summaries as [$label, $formula, $bg]) {
-            $sheet->mergeCells("A{$r}:H{$r}");
-            $sheet->setCellValue("A{$r}", $label);
-            $sheet->setCellValue("I{$r}", 'Rp');
-            $sheet->setCellValue("J{$r}", $formula);
-
-            $sheet->getStyle("A{$r}:J{$r}")->applyFromArray([
-                'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
-                'borders' => $allBorder,
-            ]);
-            $sheet
-                ->getStyle("J{$r}")
-                ->getNumberFormat()
-                ->setFormatCode($IDR);
-            $sheet->getRowDimension($r)->setRowHeight(18);
-            $r++;
-        }
-
-        $grandRow = $r - 1;
-
-        // ── TERBILANG ─────────────────────────────────────────
-        $r += 1;
-        $sheet->getRowDimension($r)->setRowHeight(14);
-        $sheet->mergeCells("A{$r}:J{$r}");
-        $sheet->setCellValue("A{$r}", 'Terbilang :');
-        $sheet
-            ->getStyle("A{$r}")
-            ->getFont()
-            ->setBold(true)
-            ->setSize(9)
-            ->setName('Arial');
-
-        $r++;
-        $sheet->getRowDimension($r)->setRowHeight(20);
-        $sheet->mergeCells("A{$r}:J{$r}");
-        $sheet->setCellValue("A{$r}", '# ' . ($rental->amount_in_words ?? 'Silahkan isi jumlah uang dalam kata...') . ' #');
-        $sheet->getStyle("A{$r}")->applyFromArray([
-            'font' => ['bold' => true, 'size' => 9, 'name' => 'Arial'],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-            'borders' => ['outline' => $thick],
-        ]);
-
-        // ── FOOTER ────────────────────────────────────────────
-        $r += 2;
-        $sheet->mergeCells("A{$r}:D{$r}");
-        $sheet->setCellValue("A{$r}", 'Balikpapan, ' . now()->translatedFormat('d F Y'));
-        $sheet
-            ->getStyle("A{$r}")
-            ->getFont()
-            ->setSize(9)
-            ->setName('Arial');
-
-        $sheet->mergeCells("E{$r}:J{$r}");
-        $sheet->setCellValue("E{$r}", 'Pembayaran ditransfer ke :');
-        $sheet
-            ->getStyle("E{$r}")
-            ->getFont()
-            ->setBold(true)
-            ->setSize(9)
-            ->setName('Arial');
-
-        $bankRows = [['Nama Bank', 'BRI'], ['Atas Nama', 'PT. TIANG KARUNIA NUSANTARA'], ['No Rek', '181-909-714-3']];
-        $r++;
-        $sheet->mergeCells("A{$r}:D{$r}");
-        $sheet->setCellValue("A{$r}", 'Hormat Kami,');
-        $sheet
-            ->getStyle("A{$r}")
-            ->getFont()
-            ->setSize(9)
-            ->setName('Arial');
-
-        foreach ($bankRows as [$lbl, $val]) {
-            // Label
-            $sheet->mergeCells("E{$r}:F{$r}");
-            $sheet->setCellValue("E{$r}", $lbl);
-
-            // Titik dua
-            $sheet->setCellValue("G{$r}", ':');
-
-            // Value
-            $sheet->mergeCells("H{$r}:J{$r}");
-            $sheet->setCellValue("H{$r}", $val);
-
-            // Styling
-            $sheet->getStyle("E{$r}:J{$r}")->applyFromArray([
-                'font' => ['size' => 9, 'name' => 'Arial'],
-                'borders' => $allBorder,
-            ]);
-
-            $sheet->getStyle("E{$r}")->applyFromArray([
-                'font' => ['bold' => true, 'size' => 9],
-                'fill' => [
-                    'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'F2F2F2'],
-                ],
-            ]);
-
-            // Alignment biar rapi
-            $sheet
-                ->getStyle("G{$r}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-            $sheet
-                ->getStyle("H{$r}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_LEFT);
-
-            $r++;
-        }
-
-        // TTD
-        $r += 3;
-        $sheet->mergeCells("A{$r}:F{$r}");
-        $sheet->setCellValue("A{$r}", 'Raindi Andreas');
-        $sheet
-            ->getStyle("A{$r}")
-            ->getFont()
-            ->setBold(true)
-            ->setSize(9)
-            ->setName('Arial');
-        $r++;
-        $sheet->mergeCells("A{$r}:F{$r}");
-        $sheet->setCellValue("A{$r}", 'Direktur');
-        $sheet
-            ->getStyle("A{$r}")
-            ->getFont()
-            ->setSize(9)
-            ->setName('Arial');
-
-        // ── Page setup ────────────────────────────────────────
-        $sheet->getPageSetup()->setOrientation('landscape');
-        $sheet->getPageSetup()->setPaperSize(9); // A4
-        $sheet->getPageMargins()->setLeft(0.5);
-        $sheet->getPageMargins()->setRight(0.5);
-        $sheet->getPageMargins()->setTop(0.75);
-        $sheet->getPageMargins()->setBottom(0.75);
+        // Page setup A4 portrait
+        $ws->getPageSetup()->setOrientation('portrait')->setPaperSize(9);
+        $ws->getPageMargins()->setLeft(0.7)->setRight(0.7)->setTop(0.75)->setBottom(0.75);
     }
 }
