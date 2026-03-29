@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\RentalsExport;
+use App\Exports\RentalsInvoiceExport;
 use App\Exports\RentalsRecapExport;
 use App\Models\Customers;
 use App\Models\Driver;
@@ -214,15 +215,14 @@ class RentalsController extends Controller
     }
 
     // Controller
-    public function rentalExport(Request $request)
+    public function rentalInvoiceExport(Request $request)
     {
         $request->validate(['rental_id' => 'required|string|exists:rentals,id']);
-        $rental = \App\Models\Rentals::findOrFail($request->rental_id);
-        $filename = 'Rekap-Stock-' . str_replace('/', '-', $rental->invoice_number) . '.xlsx';
+        $rental = Rentals::findOrFail($request->rental_id);
+        $filename = 'Invoice-' . str_replace('/', '-', $rental->invoice_number) . '.xlsx';
 
-        return Excel::download(new RentalsExport($request->rental_id), $filename);
+        return Excel::download(new RentalsInvoiceExport($request->rental_id), $filename);
     }
-    
 
     public function rentalStockExport(Request $request)
     {

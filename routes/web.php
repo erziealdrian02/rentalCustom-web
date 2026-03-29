@@ -92,6 +92,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/transactions/rentals/detail/{id}', [RentalsController::class, 'show'])->name('transactions.rentals.show');
     Route::post('/transactions/rentals/{currentRentalId}/upload-proof', [RentalsController::class, 'uploadPaymentProof'])->name('rentals.upload.proof');
     Route::get('/transactions/rentals/export', [RentalsController::class, 'rentalExport'])->name('rentals.export');
+    Route::get('/transactions/rentals/recap-export', [RentalsController::class, 'rentalRecapExport'])->name('rentals.recap.export');
+    Route::get('/transactions/rentals/stock-export', [RentalsController::class, 'rentalStockExport'])->name('rentals.stock.export');
+    Route::get('/transactions/rentals/invoice-export', [RentalsController::class, 'rentalInvoiceExport'])->name('rentals.invoice.export');
 
     Route::get('/shipping/list', [ShippingController::class, 'shippingList'])->name('shipping.list');
     Route::get('/shipping/form', [ShippingController::class, 'shippingForm'])->name('shipping.form');

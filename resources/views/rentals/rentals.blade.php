@@ -259,7 +259,7 @@
                 <div class="flex flex-col sm:flex-row gap-3 pt-1">
 
                     {{-- Export Excel --}}
-                    <a id="btn-export-excel" href="#"
+                    <a id="btn-export-recap-excel" href="#"
                         class="flex-1 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 transition font-medium flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -268,7 +268,7 @@
                         Export Excel
                     </a>
 
-                    <a id="btn-stock-rekap" href="#"
+                    <a id="btn-export-stock-excel" href="#"
                         class="flex-1 bg-emerald-600 text-white py-3 rounded-xl hover:bg-emerald-700 transition font-medium flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -278,14 +278,22 @@
                     </a>
 
                     {{-- Print --}}
-                    <button
+                    <a id="btn-export-invoice-excel" href="#"
+                        class="flex-1 bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition font-medium flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Invoice
+                    </a>
+                    {{-- <button
                         class="flex-1 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                         </svg>
                         Print Details
-                    </button>
+                    </button> --}}
 
                     <button onclick="closeRentalModal()"
                         class="flex-1 bg-gray-100 text-gray-800 py-3 rounded-xl hover:bg-gray-200 transition font-medium">
@@ -478,8 +486,12 @@
             const endDate = new Date(rental.rental_end_date);
             const days = Math.max(1, Math.ceil((endDate - startDate) / 86400000));
 
-            const exportUrl = '{{ route('rentals.export') }}' + '?rental_id=' + rentalId;
-            document.getElementById('btn-export-excel').href = exportUrl;
+            const exportRecapUrl = '{{ route('rentals.recap.export') }}' + '?rental_id=' + rentalId;
+            document.getElementById('btn-export-recap-excel').href = exportRecapUrl;
+            const exportStockUrl = '{{ route('rentals.stock.export') }}' + '?rental_id=' + rentalId;
+            document.getElementById('btn-export-stock-excel').href = exportStockUrl;
+            const exportInvoiceUrl = '{{ route('rentals.invoice.export') }}' + '?rental_id=' + rentalId;
+            document.getElementById('btn-export-invoice-excel').href = exportInvoiceUrl;
 
             el('modal-items-title').textContent = `Rental Items (${movements.length})`;
             el('modal-items-list').innerHTML = movements.length ?

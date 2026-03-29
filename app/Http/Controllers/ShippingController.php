@@ -13,86 +13,27 @@ use Illuminate\Support\Str;
 
 class ShippingController extends Controller
 {
-    private function getShippings()
+    function sendWhatsapp($target, $message)
     {
-        return session('shippings', [
-            [
-                'id' => 1,
-                'deliveryNumber' => 'DEL-2025-001',
-                'driverName' => 'Ahmad Supardi',
-                'vehicleType' => 'Truck',
-                'licensePlate' => 'B 1234 ABC',
-                'phone' => '085-555-2001',
-                'status' => 'Delivered',
-                'departureTime' => '2025-01-10 08:00',
-                'arrivalTime' => '2025-01-10 11:30',
-                'notes' => 'Delivered on time. All items in good condition.',
-                'proofImage' => null,
-                'rentals' => [
-                    [
-                        'customerName' => 'John Doe',
-                        'invoiceNumber' => 'INV-2025-001',
-                        'items' => 2,
-                        'fromLocation' => 'Warehouse Alpha',
-                        'toLocation' => 'Jl. Sudirman No. 10, Jakarta',
-                    ],
-                ],
+        $token = env('FONNTE_TOKEN');
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => 'https://api.fonnte.com/send',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => [
+                'target' => $target,
+                'message' => $message,
             ],
-            [
-                'id' => 2,
-                'deliveryNumber' => 'DEL-2025-002',
-                'driverName' => 'Budi Santoso',
-                'vehicleType' => 'Van',
-                'licensePlate' => 'D 5678 XYZ',
-                'phone' => '085-555-2002',
-                'status' => 'In Transit',
-                'departureTime' => '2025-01-15 09:00',
-                'arrivalTime' => null,
-                'notes' => 'On the way to destination.',
-                'proofImage' => null,
-                'rentals' => [
-                    [
-                        'customerName' => 'Jane Smith',
-                        'invoiceNumber' => 'INV-2025-002',
-                        'items' => 3,
-                        'fromLocation' => 'Warehouse Beta',
-                        'toLocation' => 'Jl. Gatot Subroto No. 5, Bandung',
-                    ],
-                ],
-            ],
-            [
-                'id' => 3,
-                'deliveryNumber' => 'DEL-2025-003',
-                'driverName' => 'Candra Wijaya',
-                'vehicleType' => 'Pickup',
-                'licensePlate' => 'L 9012 DEF',
-                'phone' => '085-555-2003',
-                'status' => 'Pending',
-                'departureTime' => '2025-01-20 10:00',
-                'arrivalTime' => null,
-                'notes' => 'Waiting for dispatch confirmation.',
-                'proofImage' => null,
-                'rentals' => [
-                    [
-                        'customerName' => 'Bob Johnson',
-                        'invoiceNumber' => 'INV-2025-003',
-                        'items' => 1,
-                        'fromLocation' => 'Warehouse Gamma',
-                        'toLocation' => 'Jl. Ahmad Yani No. 88, Surabaya',
-                    ],
-                ],
-            ],
+            CURLOPT_HTTPHEADER => ["Authorization: $token"],
         ]);
-    }
 
-    private function getDrivers()
-    {
-        return session('drivers', [['id' => 1, 'name' => 'Ahmad Supardi', 'vehicleType' => 'Truck', 'licensePlate' => 'B 1234 ABC', 'phone' => '085-555-2001', 'status' => 'Active'], ['id' => 2, 'name' => 'Budi Santoso', 'vehicleType' => 'Van', 'licensePlate' => 'D 5678 XYZ', 'phone' => '085-555-2002', 'status' => 'Active'], ['id' => 3, 'name' => 'Candra Wijaya', 'vehicleType' => 'Pickup', 'licensePlate' => 'L 9012 DEF', 'phone' => '085-555-2003', 'status' => 'Active'], ['id' => 4, 'name' => 'Deni Kurniawan', 'vehicleType' => 'Truck', 'licensePlate' => 'B 3456 GHI', 'phone' => '085-555-2004', 'status' => 'Inactive']]);
-    }
+        $response = curl_exec($curl);
+        curl_close($curl);
 
-    private function getRentals()
-    {
-        return session('rentals', [['id' => 1, 'invoiceNumber' => 'INV-2025-001', 'customerName' => 'John Doe', 'customerId' => 1, 'status' => 'Active', 'items' => [['toolName' => 'Angle Grinder'], ['toolName' => 'Hammer']]], ['id' => 2, 'invoiceNumber' => 'INV-2025-002', 'customerName' => 'Jane Smith', 'customerId' => 2, 'status' => 'Active', 'items' => [['toolName' => 'Drill Machine'], ['toolName' => 'Safety Helmet'], ['toolName' => 'Wrench']]], ['id' => 3, 'invoiceNumber' => 'INV-2025-003', 'customerName' => 'Bob Johnson', 'customerId' => 3, 'status' => 'Completed', 'items' => [['toolName' => 'Ladder']]]]);
+        return $response;
     }
 
     public function shippingList()
@@ -202,8 +143,6 @@ class ShippingController extends Controller
             $deliveryNumber = 'DEL-' . strtoupper(Str::random(4)) . '-' . now()->format('Ymd');
         }
 
-        // dd($rentalItems);
-
         $shipping = new Shipping();
         $shipping->id = (string) Str::uuid();
         $shipping->delivery_number = $deliveryNumber;
@@ -229,6 +168,23 @@ class ShippingController extends Controller
             $rental->save();
         }
 
+        $driver = Driver::find($request->driverId);
+
+        if ($driver && $driver->phone) {
+            $phone = preg_replace('/^0/', '62', $driver->phone);
+
+            // Ambil lokasi asal (gabung semua warehouse)
+            $fromText = collect($fromLocation)->flatten()->unique()->implode(', ');
+
+            $toText = $toLocation;
+
+            $link = url('/shipping/driver/departure/' . $deliveryNumber);
+
+            $message = "⚠️ *Disclaimer:*\n" . "Pesan ini dikirim otomatis oleh sistem.\n" . "Tidak perlu membalas chat ini, silakan abaikan.\n\n" . "🚚 *Tugas Pengiriman Baru*\n\n" . "👤 Driver: {$driver->name}\n" . "📦 Dari: {$fromText}\n" . "📍 Tujuan: {$toText}\n" . "📄 No Delivery: {$deliveryNumber}\n\n" . "🔗 Akses tugas:\n{$link}\n\n" . "⚠️ *Note:*\n" . "Sebelum berangkat, mohon konfirmasi terlebih dahulu melalui link di atas.\n\n" . 'Terima kasih 🙏';
+
+            $this->sendWhatsapp($phone, $message);
+        }
+
         return redirect()->route('shipping.list')->with('success', 'Shipment created successfully!');
     }
 
@@ -240,7 +196,7 @@ class ShippingController extends Controller
 
         // Active: pending & in_transit
         $activeShippings = Shipping::where('driver_id', $id)
-            ->whereIn('delivery_status', ['Pending','On Track'])
+            ->whereIn('delivery_status', ['Pending', 'On Track'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -416,7 +372,7 @@ class ShippingController extends Controller
 
         $shipping->proof_image_url = $path;
         $shipping->notes = $request->notes ?? $shipping->notes;
-        
+
         $shipping->save();
 
         return redirect()
