@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\RentalsExport;
 use App\Models\Customers;
 use App\Models\Rentals;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\Tools;
 use App\Models\Warehouse;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Pest\ArchPresets\Custom;
+use Maatwebsite\Excel\Facades\Excel;
 
 class RentalsController extends Controller
 {
@@ -53,6 +55,19 @@ class RentalsController extends Controller
         }
 
         return view('rentals.rentals', compact('rentals', 'customersById', 'movementsByRentalId', 'totalRentals', 'activeRentals', 'completedRentals', 'totalRevenue'));
+    }
+
+    public function uploadPaymentProof(Request $request, $rentalId)
+    {
+        $rental = Rentals::findOrFail($rentalId);
+
+        $path = $request->file('payment_proof')->store('payment_proofs', 'public');
+
+        $rental->payment_proof_image = $path;
+        $rental->payment_status = 'paid';
+        $rental->save();
+
+        return response()->json(['success' => true, 'path' => Storage::url($path)]);
     }
 
     public function rentalForm()
@@ -186,5 +201,17 @@ class RentalsController extends Controller
         return redirect()
             ->route('transactions.rentals')
             ->with('success', "Rental created! Invoice: {$invoiceNum}");
+    }
+
+    public function rentalExport(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $fromDate = $request->input('from_date');
+        $untilDate = Carbon::parse($request->input('until_date'))->addDay();
+        $stat = $request->input('stat');
+
+        // TODO: Create CashAdvancedExport class or implement export logic
+        return Excel::download(new RentalsExport($startDate, $endDate, $fromDate, $untilDate, $stat), 'cash_advanced.xlsx');
     }
 }

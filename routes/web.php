@@ -90,6 +90,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/transactions/rentals/form', [RentalsController::class, 'rentalForm'])->name('transactions.rentals.form');
     Route::post('/transactions/rentals/post', [RentalsController::class, 'rentalStore'])->name('transactions.rentals.store');
     Route::get('/transactions/rentals/detail/{id}', [RentalsController::class, 'show'])->name('transactions.rentals.show');
+    Route::post('/transactions/rentals/{currentRentalId}/upload-proof', [RentalsController::class, 'uploadPaymentProof'])->name('rentals.upload.proof');
 
     Route::get('/shipping/list', [ShippingController::class, 'shippingList'])->name('shipping.list');
     Route::get('/shipping/form', [ShippingController::class, 'shippingForm'])->name('shipping.form');
