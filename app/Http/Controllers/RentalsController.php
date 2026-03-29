@@ -205,13 +205,12 @@ class RentalsController extends Controller
 
     public function rentalExport(Request $request)
     {
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
-        $fromDate = $request->input('from_date');
-        $untilDate = Carbon::parse($request->input('until_date'))->addDay();
-        $stat = $request->input('stat');
+        $rental   = Rentals::findOrFail($request->rental_id);
+        $filename = 'Rekap-Tagihan-' . str_replace('/', '-', $rental->invoice_number) . '.xlsx';
 
-        // TODO: Create CashAdvancedExport class or implement export logic
-        return Excel::download(new RentalsExport($startDate, $endDate, $fromDate, $untilDate, $stat), 'cash_advanced.xlsx');
+        return Excel::download(
+            new RentalsExport($request->rental_id),
+            $filename
+        );
     }
 }
