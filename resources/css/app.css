@@ -43,21 +43,33 @@
     --color-success-600: #16a34a;
     --color-success-700: #15803d;
     --color-success-900: #1d4332;
+    --color-success-100: #dcfce7;
+    --color-success-200: #bbf7d0;
+    --color-success-800: #166534;
 
     --color-warning-50: #fffbeb;
     --color-warning-600: #d97706;
     --color-warning-700: #b45309;
     --color-warning-900: #78350f;
+    --color-warning-100: #fef3c7;
+    --color-warning-200: #fde68a;
+    --color-warning-800: #92400e;
 
     --color-error-50: #fef2f2;
     --color-error-600: #dc2626;
     --color-error-700: #b91c1c;
     --color-error-900: #7f1d1d;
+    --color-error-100: #fee2e2;
+    --color-error-200: #fecaca;
+    --color-error-800: #991b1b;
 
     --color-info-50: #f0f9ff;
     --color-info-600: #0284c7;
     --color-info-700: #0369a1;
     --color-info-900: #0c2d6b;
+    --color-info-100: #e0f2fe;
+    --color-info-200: #bae6fd;
+    --color-info-800: #075985;
 
     /* Neutral Colors */
     --color-background: #ffffff;
@@ -161,7 +173,8 @@
     input,
     textarea,
     select {
-        @apply px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+        @apply px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground
+focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
     }
 
     input:disabled,
@@ -179,7 +192,8 @@
 @layer components {
     /* Button Styles */
     .btn {
-        @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+        @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors focus:outline-none
+focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
     }
 
     .btn-primary {
