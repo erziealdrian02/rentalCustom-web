@@ -4,6 +4,8 @@ namespace App\Exports;
 
 use App\Models\Rentals;
 use App\Models\StockMovement;
+use App\Models\Tools;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -15,7 +17,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Font as SpFont;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class RentalsStockExport implements FromArray, WithEvents, WithTitle
+class RentalsStockExport implements WithEvents, WithTitle
 {
     protected Rentals $rental;
     protected $kirimMovements; // stock_type = RENT  (movement_id)
@@ -56,15 +58,34 @@ class RentalsStockExport implements FromArray, WithEvents, WithTitle
             ->filter()
             ->values()
             ->toArray();
+
+        $allToolIds = $this->kirimMovements
+            ->pluck('tool_id')
+            ->merge($this->pulangMovements->pluck('tool_id'))
+            ->unique()
+            ->filter()
+            ->values();
+
+        // Query langsung ke model Tool
+        $this->tools = Tools::whereIn('id_tools', $allToolIds)->orderBy('name')->get()->toArray();
+
+        Log::info(
+            'kirim tools',
+            $this->kirimMovements
+                ->map(
+                    fn($m) => [
+                        'tool_id' => $m->tool_id,
+                        'tool_name' => $m->tool?->name,
+                        'tool_obj_id' => $m->tool?->id,
+                    ],
+                )
+                ->toArray(),
+        );
     }
 
     public function title(): string
     {
         return 'Rekap Stock Project';
-    }
-    public function array(): array
-    {
-        return [['']];
     }
 
     public function registerEvents(): array
@@ -76,6 +97,8 @@ class RentalsStockExport implements FromArray, WithEvents, WithTitle
 
     private function buildSheet(Worksheet $ws): void
     {
+        $ws->getParent()->setActiveSheetIndex(0);
+
         $tools = $this->tools;
         $nTools = count($tools);
         $lastCol = 3 + $nTools;
@@ -93,22 +116,6 @@ class RentalsStockExport implements FromArray, WithEvents, WithTitle
 
         $applyStyle = function (int $row, int $colIdx, $value = '', bool $bold = false, int $size = 10, string $color = '000000', ?string $bg = null, string $halign = 'left', bool $wrap = false, ?string $numFmt = null, bool $italic = false, ?string $underline = null, bool $border = true) use ($ws, $thin) {
             $c = $ws->getCellByColumnAndRow($colIdx, $row);
-            // skip merged cells
-            if ($c->isInMergeRange()) {
-                $coordinate = $c->getCoordinate();
-                $mergedCells = $ws->getMergeCells();
-                $isMergeStart = false;
-                foreach ($mergedCells as $mergeRange) {
-                    if (str_starts_with($mergeRange, $coordinate)) {
-                        $isMergeStart = true;
-                        break;
-                    }
-                }
-                if (!$isMergeStart) {
-                    return;
-                }
-            }
-
             $c->setValue($value);
 
             $font = $ws->getStyleByColumnAndRow($colIdx, $row)->getFont();
@@ -188,7 +195,6 @@ class RentalsStockExport implements FromArray, WithEvents, WithTitle
         // Group by reference_id (nomor surat jalan)
         $kirimGrouped = $this->kirimMovements->groupBy('reference_id');
 
-        // ── KIRIM ROWS — A=tanggal (right-align), B=spacer, C=nomor SJ, D+=qty
         foreach ($kirimGrouped as $refId => $group) {
             $ws->getRowDimension($r)->setRowHeight(15);
             $date = \Carbon\Carbon::parse($group->first()->updated_at)->format('d-M-y');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\RentalsExport;
 use App\Exports\RentalsInvoiceExport;
 use App\Exports\RentalsRecapExport;
+use App\Exports\RentalsStockExport;
 use App\Models\Customers;
 use App\Models\Driver;
 use App\Models\Rentals;
@@ -230,7 +231,7 @@ class RentalsController extends Controller
         $rental = \App\Models\Rentals::findOrFail($request->rental_id);
         $filename = 'Rekap-Stock-' . str_replace('/', '-', $rental->invoice_number) . '.xlsx';
 
-        return Excel::download(new RentalsExport($request->rental_id), $filename);
+        return Excel::download(new RentalsStockExport($request->rental_id), $filename);
     }
 
     public function rentalRecapExport(Request $request)
