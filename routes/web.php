@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DriverController;
 use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\PricingController;
 use App\Http\Controllers\RentalsController;
@@ -70,6 +71,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/master/customers/post', [CustomersController::class, 'masterCustomersStore'])->name('customers.store');
     Route::put('/master/customers/update/{id}', [CustomersController::class, 'masterCustomersUpdate'])->name('customers.update');
     Route::delete('/master/customers/delete/{id}', [CustomersController::class, 'masterCustomersDestroy'])->name('customers.destroy');
+
+    Route::get('/master/drivers', [DriverController::class, 'masterDrivers'])->name('master.drivers');
+    Route::post('/master/drivers/post', [DriverController::class, 'masterDriversStore'])->name('drivers.store');
+    Route::put('/master/drivers/update/{id}', [DriverController::class, 'masterDriversUpdate'])->name('drivers.update');
+    Route::delete('/master/drivers/delete/{id}', [DriverController::class, 'masterDriversDestroy'])->name('drivers.destroy');
 
     Route::get('/master/pricing', [PricingController::class, 'masterPricing'])->name('master.pricing');
     Route::post('/master/pricing/post', [PricingController::class, 'masterPricingStore'])->name('pricing.store');
