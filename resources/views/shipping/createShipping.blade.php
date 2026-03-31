@@ -324,8 +324,8 @@
                 </div>
                 <div class="mt-2 space-y-1">
                     ${item.locations.map(loc => `
-                            <p class="text-xs text-gray-500">📦 ${loc.warehouseName} → ${item.toLocation}</p>
-                        `).join('')}
+                                <p class="text-xs text-gray-500">📦 ${loc.warehouseName} → ${item.toLocation}</p>
+                            `).join('')}
                 </div>
             </div>
         `).join('') + '</div>';
