@@ -19,11 +19,8 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\WarehouseController;
 use App\Models\Dashboard;
 
-// Route::get('/', function () {
-//     return view('login');
-// });
-
 Route::middleware('guest')->group(function () {
+    Route::get('/', [AuthController::class, 'showLogin'])->name('login');
     // Login
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
@@ -42,7 +39,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    // Logout
+    Route::get('/', [DashboardController::class, 'dashboard'])->name('dashboard');
+
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Profile
