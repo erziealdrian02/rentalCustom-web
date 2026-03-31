@@ -76,7 +76,7 @@ class ShippingController extends Controller
     public function shippingForm()
     {
         $rentals = Rentals::with('customer')
-            ->whereIn('rental_status', ['Pending', 'Returning'])
+            ->whereIn('rental_status', ['Pending'])
             ->get();
 
         $drivers = Driver::where('status', 'active')->get();
@@ -163,7 +163,7 @@ class ShippingController extends Controller
 
             $rental->delivery_id = $deliveryNumber;
             $rental->driver_id = $request->driverId;
-            $rental->rental_status = 'Pending';
+            $rental->rental_status = 'Returning';
 
             $rental->save();
         }
