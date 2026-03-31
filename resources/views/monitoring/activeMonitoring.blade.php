@@ -285,7 +285,7 @@
         }
 
         function updateRentalStatus(rentalId, newStatus) {
-            fetch(`/monitoring/active/${rentalId}/status`, {
+            fetch(`/monitoring-active/${rentalId}/status`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

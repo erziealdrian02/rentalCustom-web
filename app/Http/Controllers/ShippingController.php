@@ -178,7 +178,7 @@ class ShippingController extends Controller
 
             $toText = $toLocation;
 
-            $link = url('/shipping/driver/departure/' . $deliveryNumber);
+            $link = url('/drivers/departure/' . $deliveryNumber);
 
             $message = "⚠️ *Disclaimer:*\n" . "Pesan ini dikirim otomatis oleh sistem.\n" . "Tidak perlu membalas chat ini, silakan abaikan.\n\n" . "🚚 *Tugas Pengiriman Baru*\n\n" . "👤 Driver: {$driver->name}\n" . "📦 Dari: {$fromText}\n" . "📍 Tujuan: {$toText}\n" . "📄 No Delivery: {$deliveryNumber}\n\n" . "🔗 Akses tugas:\n" . $link  . "\n\n" . "⚠️ *Note:*\n" . "Sebelum berangkat, mohon konfirmasi terlebih dahulu melalui link di atas.\n\n" . 'Terima kasih 🙏';
 

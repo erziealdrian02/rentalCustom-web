@@ -303,7 +303,7 @@
 
             if (warehouse) {
                 title.textContent = 'Edit Warehouse';
-                form.action = `/master/warehouses/update/${warehouse.id}`;
+                form.action = `/warehouses/update/${warehouse.id}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 document.getElementById('f-name').value = warehouse.name;

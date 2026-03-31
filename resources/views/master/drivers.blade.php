@@ -276,7 +276,7 @@
 
             if (driver) {
                 title.textContent = `Edit Driver: ${driver.name}`;
-                form.action = `/master/drivers/update/${driver.id}`;
+                form.action = `/drivers/update/${driver.id}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 document.getElementById('driver-id').value = driver.id;

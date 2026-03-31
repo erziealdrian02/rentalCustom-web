@@ -50,81 +50,81 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
 
-    Route::get('/master/tools', [ToolsController::class, 'masterTools'])->name('master.tools');
-    Route::post('/master/tools/post', [ToolsController::class, 'masterToolsStore'])->name('tools.store');
-    Route::put('/master/tools/update/{id_tools}', [ToolsController::class, 'masterToolsUpdate'])->name('tools.update');
-    Route::delete('/master/tools/delete/{id_tools}', [ToolsController::class, 'masterToolsDestroy'])->name('tools.destroy');
+    Route::get('/tools', [ToolsController::class, 'masterTools'])->name('master.tools');
+    Route::post('/tools/post', [ToolsController::class, 'masterToolsStore'])->name('tools.store');
+    Route::put('/tools/update/{id_tools}', [ToolsController::class, 'masterToolsUpdate'])->name('tools.update');
+    Route::delete('/tools/delete/{id_tools}', [ToolsController::class, 'masterToolsDestroy'])->name('tools.destroy');
 
-    Route::get('/master/categories', [CategoriesController::class, 'masterCategories'])->name('master.categories');
-    Route::post('/master/categories/post', [CategoriesController::class, 'masterCategoriesStore'])->name('categories.store');
-    Route::put('/master/categories/update/{id}', [CategoriesController::class, 'masterCategoriesUpdate'])->name('categories.update');
-    Route::delete('/master/categories/delete/{id}', [CategoriesController::class, 'masterCategoriesDestroy'])->name('categories.destroy');
+    Route::get('/categories', [CategoriesController::class, 'masterCategories'])->name('master.categories');
+    Route::post('/categories/post', [CategoriesController::class, 'masterCategoriesStore'])->name('categories.store');
+    Route::put('/categories/update/{id}', [CategoriesController::class, 'masterCategoriesUpdate'])->name('categories.update');
+    Route::delete('/categories/delete/{id}', [CategoriesController::class, 'masterCategoriesDestroy'])->name('categories.destroy');
 
-    Route::get('/master/warehouses', [WarehouseController::class, 'masterWarehouses'])->name('master.warehouses');
-    Route::post('/master/warehouses/post', [WarehouseController::class, 'masterWarehousesStore'])->name('warehouses.store');
-    Route::put('/master/warehouses/update/{id}', [WarehouseController::class, 'masterWarehousesUpdate'])->name('warehouses.update');
-    Route::delete('/master/warehouses/delete/{id}', [WarehouseController::class, 'masterWarehousesDestroy'])->name('warehouses.destroy');
+    Route::get('/warehouses', [WarehouseController::class, 'masterWarehouses'])->name('master.warehouses');
+    Route::post('/warehouses/post', [WarehouseController::class, 'masterWarehousesStore'])->name('warehouses.store');
+    Route::put('/warehouses/update/{id}', [WarehouseController::class, 'masterWarehousesUpdate'])->name('warehouses.update');
+    Route::delete('/warehouses/delete/{id}', [WarehouseController::class, 'masterWarehousesDestroy'])->name('warehouses.destroy');
 
-    Route::get('/master/customers', [CustomersController::class, 'masterCustomers'])->name('master.customers');
-    Route::post('/master/customers/post', [CustomersController::class, 'masterCustomersStore'])->name('customers.store');
-    Route::put('/master/customers/update/{id}', [CustomersController::class, 'masterCustomersUpdate'])->name('customers.update');
-    Route::delete('/master/customers/delete/{id}', [CustomersController::class, 'masterCustomersDestroy'])->name('customers.destroy');
+    Route::get('/customers', [CustomersController::class, 'masterCustomers'])->name('master.customers');
+    Route::post('/customers/post', [CustomersController::class, 'masterCustomersStore'])->name('customers.store');
+    Route::put('/customers/update/{id}', [CustomersController::class, 'masterCustomersUpdate'])->name('customers.update');
+    Route::delete('/customers/delete/{id}', [CustomersController::class, 'masterCustomersDestroy'])->name('customers.destroy');
 
-    Route::get('/master/drivers', [DriverController::class, 'masterDrivers'])->name('master.drivers');
-    Route::post('/master/drivers/post', [DriverController::class, 'masterDriversStore'])->name('drivers.store');
-    Route::put('/master/drivers/update/{id}', [DriverController::class, 'masterDriversUpdate'])->name('drivers.update');
-    Route::delete('/master/drivers/delete/{id}', [DriverController::class, 'masterDriversDestroy'])->name('drivers.destroy');
+    Route::get('/drivers', [DriverController::class, 'masterDrivers'])->name('master.drivers');
+    Route::post('/drivers/post', [DriverController::class, 'masterDriversStore'])->name('drivers.store');
+    Route::put('/drivers/update/{id}', [DriverController::class, 'masterDriversUpdate'])->name('drivers.update');
+    Route::delete('/drivers/delete/{id}', [DriverController::class, 'masterDriversDestroy'])->name('drivers.destroy');
 
-    Route::get('/master/pricing', [PricingController::class, 'masterPricing'])->name('master.pricing');
-    Route::post('/master/pricing/post', [PricingController::class, 'masterPricingStore'])->name('pricing.store');
-    Route::put('/master/pricing/update/{id}', [PricingController::class, 'masterPricingUpdate'])->name('pricing.update');
+    Route::get('/pricing', [PricingController::class, 'masterPricing'])->name('master.pricing');
+    Route::post('/pricing/post', [PricingController::class, 'masterPricingStore'])->name('pricing.store');
+    Route::put('/pricing/update/{id}', [PricingController::class, 'masterPricingUpdate'])->name('pricing.update');
 
-    Route::get('/master/users', [UsersController::class, 'masterUsers'])->name('master.users');
-    Route::post('/master/users/post', [UsersController::class, 'masterUsersStore'])->name('users.store');
-    Route::put('/master/users/update/{id}', [UsersController::class, 'masterUsersUpdate'])->name('users.update');
-    Route::put('/master/users/reset/{id}', [UsersController::class, 'masterUsersReset'])->name('users.reset');
-    Route::delete('/master/users/delete/{id}', [UsersController::class, 'masterUsersDestroy'])->name('users.destroy');
+    Route::get('/users', [UsersController::class, 'masterUsers'])->name('master.users');
+    Route::post('/users/post', [UsersController::class, 'masterUsersStore'])->name('users.store');
+    Route::put('/users/update/{id}', [UsersController::class, 'masterUsersUpdate'])->name('users.update');
+    Route::put('/users/reset/{id}', [UsersController::class, 'masterUsersReset'])->name('users.reset');
+    Route::delete('/users/delete/{id}', [UsersController::class, 'masterUsersDestroy'])->name('users.destroy');
 
-    Route::get('/stock/overview', [StockController::class, 'overview'])->name('stock.overview');
-    Route::get('/stock/restock/form', [StockController::class, 'restockForm'])->name('stock.restock.form');
-    Route::post('/stock/restock/store', [StockController::class, 'restockStore'])->name('stock.restock.store');
-    Route::get('/stock/movement', [StockController::class, 'movement'])->name('stock.movement');
+    Route::get('/stock-overview', [StockController::class, 'overview'])->name('stock.overview');
+    Route::get('/stock-overview/form-restock', [StockController::class, 'restockForm'])->name('stock.restock.form');
+    Route::post('/stock-overview/form-restock/store', [StockController::class, 'restockStore'])->name('stock.restock.store');
+    Route::get('/stock-movement', [StockController::class, 'movement'])->name('stock.movement');
 
-    Route::get('/transactions/rentals', [RentalsController::class, 'rental'])->name('transactions.rentals');
-    Route::get('/transactions/rentals/form', [RentalsController::class, 'rentalForm'])->name('transactions.rentals.form');
-    Route::post('/transactions/rentals/post', [RentalsController::class, 'rentalStore'])->name('transactions.rentals.store');
-    Route::get('/transactions/rentals/detail/{id}', [RentalsController::class, 'show'])->name('transactions.rentals.show');
-    Route::post('/transactions/rentals/{currentRentalId}/upload-proof', [RentalsController::class, 'uploadPaymentProof'])->name('rentals.upload.proof');
-    Route::get('/transactions/rentals/export', [RentalsController::class, 'rentalExport'])->name('rentals.export');
-    Route::get('/transactions/rentals/recap-export', [RentalsController::class, 'rentalRecapExport'])->name('rentals.recap.export');
-    Route::get('/transactions/rentals/stock-export', [RentalsController::class, 'rentalStockExport'])->name('rentals.stock.export');
-    Route::get('/transactions/rentals/invoice-export', [RentalsController::class, 'rentalInvoiceExport'])->name('rentals.invoice.export');
+    Route::get('/transactions-rentals', [RentalsController::class, 'rental'])->name('transactions.rentals');
+    Route::get('/transactions-rentals/rentals-form', [RentalsController::class, 'rentalForm'])->name('transactions.rentals.form');
+    Route::post('/transactions-rentals/post', [RentalsController::class, 'rentalStore'])->name('transactions.rentals.store');
+    Route::get('/transactions-rentals/detail/{id}', [RentalsController::class, 'show'])->name('transactions.rentals.show');
+    Route::post('/transactions-rentals/{currentRentalId}/upload-proof', [RentalsController::class, 'uploadPaymentProof'])->name('rentals.upload.proof');
+    Route::get('/transactions-rentals/export', [RentalsController::class, 'rentalExport'])->name('rentals.export');
+    Route::get('/transactions-rentals/recap-export', [RentalsController::class, 'rentalRecapExport'])->name('rentals.recap.export');
+    Route::get('/transactions-rentals/stock-export', [RentalsController::class, 'rentalStockExport'])->name('rentals.stock.export');
+    Route::get('/transactions-rentals/invoice-export', [RentalsController::class, 'rentalInvoiceExport'])->name('rentals.invoice.export');
 
-    Route::get('/shipping/list', [ShippingController::class, 'shippingList'])->name('shipping.list');
-    Route::get('/shipping/form', [ShippingController::class, 'shippingForm'])->name('shipping.form');
-    Route::post('/shipping/create/post', [ShippingController::class, 'shippingStore'])->name('shipping.store');
+    Route::get('/shipping-list', [ShippingController::class, 'shippingList'])->name('shipping.list');
+    Route::get('/shipping-list/shipping-form', [ShippingController::class, 'shippingForm'])->name('shipping.form');
+    Route::post('/shipping-list/create/post', [ShippingController::class, 'shippingStore'])->name('shipping.store');
 
-    Route::get('/shipping/driver/{id}', [ShippingController::class, 'shippingDriver'])->name('shipping.driver');
-    Route::get('/shipping/driver/departure/{delivery_number}', [ShippingController::class, 'shippingDriverDeparture'])->name('shipping.driver.departure');
-    Route::put('/shipping/driver/departure/update/{delivery_number}', [ShippingController::class, 'shippingDriverDepartureUpdate'])->name('shipping.driver.departure.update');
-    Route::get('/shipping/driver/arrival/{delivery_number}', [ShippingController::class, 'shippingDriverArrival'])->name('shipping.driver.arrival');
-    Route::put('/shipping/driver/arrival/update/{delivery_number}', [ShippingController::class, 'shippingDriverArrivalUpdate'])->name('shipping.driver.arrival.update');
-    Route::get('/shipping/driver/{id}/history/{delivery_number}', [ShippingController::class, 'shippingDriverHistoryDetail'])->name('shipping.driver.history');
-    Route::put('/shipping/driver/{id}/reupload/{delivery_number}', [ShippingController::class, 'shippingDriverReupload'])->name('shipping.driver.reupload');
+    Route::get('/drivers/{id}', [ShippingController::class, 'shippingDriver'])->name('shipping.driver');
+    Route::get('/drivers/departure/{delivery_number}', [ShippingController::class, 'shippingDriverDeparture'])->name('shipping.driver.departure');
+    Route::put('/drivers/departure/update/{delivery_number}', [ShippingController::class, 'shippingDriverDepartureUpdate'])->name('shipping.driver.departure.update');
+    Route::get('/drivers/arrival/{delivery_number}', [ShippingController::class, 'shippingDriverArrival'])->name('shipping.driver.arrival');
+    Route::put('/drivers/arrival/update/{delivery_number}', [ShippingController::class, 'shippingDriverArrivalUpdate'])->name('shipping.driver.arrival.update');
+    Route::get('/drivers/{id}/history/{delivery_number}', [ShippingController::class, 'shippingDriverHistoryDetail'])->name('shipping.driver.history');
+    Route::put('/drivers/{id}/reupload/{delivery_number}', [ShippingController::class, 'shippingDriverReupload'])->name('shipping.driver.reupload');
 
-    Route::get('/monitoring/active', [MonitoringController::class, 'monitoringActive'])->name('monitoring.active');
+    Route::get('/monitoring-active', [MonitoringController::class, 'monitoringActive'])->name('monitoring.active');
 
     Route::get('/return', [ReturnsController::class, 'returnsTools'])->name('returns.tools');
-    Route::get('/return/form', [ReturnsController::class, 'returnsFrom'])->name('returns.form');
-    Route::post('/return/form/post', [ReturnsController::class, 'returnStore'])->name('returns.store');
+    Route::get('/return/return-form', [ReturnsController::class, 'returnsFrom'])->name('returns.form');
+    Route::post('/return/return-form/post', [ReturnsController::class, 'returnStore'])->name('returns.store');
 
-    Route::get('/lost/tools', [SpecialController::class, 'lostTools'])->name('lost.tools');
-    Route::get('/sold/tools', [SpecialController::class, 'soldTools'])->name('sold.tools');
+    Route::get('/lost-tools', [SpecialController::class, 'lostTools'])->name('lost.tools');
+    Route::get('/sold-tools', [SpecialController::class, 'soldTools'])->name('sold.tools');
 
-    Route::get('/reports/rentals', [ReportsController::class, 'rentalReports'])->name('reports.rental');
-    Route::get('/reports/rentals/export', [ReportsController::class, 'rentalReportsexport'])->name('reports.rental.export');
-    Route::get('/reports/revenue', [ReportsController::class, 'revenueReports'])->name('reports.revenue');
-    Route::get('/reports/revenue/export', [ReportsController::class, 'revenueReportsexport'])->name('reports.revenue.export');
-    Route::get('/reports/inventory', [ReportsController::class, 'inventoryReports'])->name('reports.inventory');
-    Route::get('/reports/inventory/export', [ReportsController::class, 'inventoryReportsexport'])->name('reports.inventory.export');
+    Route::get('/reports-rentals', [ReportsController::class, 'rentalReports'])->name('reports.rental');
+    Route::get('/reports-rentals/export', [ReportsController::class, 'rentalReportsexport'])->name('reports.rental.export');
+    Route::get('/reports-revenue', [ReportsController::class, 'revenueReports'])->name('reports.revenue');
+    Route::get('/reports-revenue/export', [ReportsController::class, 'revenueReportsexport'])->name('reports.revenue.export');
+    Route::get('/reports-inventory', [ReportsController::class, 'inventoryReports'])->name('reports.inventory');
+    Route::get('/reports-inventory/export', [ReportsController::class, 'inventoryReportsexport'])->name('reports.inventory.export');
 });

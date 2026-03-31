@@ -227,7 +227,7 @@
 
             if (customer) {
                 title.textContent = 'Edit Customer';
-                form.action = `/master/customers/update/${customer.id}`;
+                form.action = `/customers/update/${customer.id}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 document.getElementById('f-name').value = customer.name;

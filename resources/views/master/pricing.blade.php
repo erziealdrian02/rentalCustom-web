@@ -191,7 +191,7 @@
 
             if (price) {
                 title.textContent = `Edit Pricing ${price.code_tools}`;
-                form.action = `/master/pricing/update/${price.id_tools}`;
+                form.action = `/pricing/update/${price.id_tools}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 // Set select tool

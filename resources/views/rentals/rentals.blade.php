@@ -576,7 +576,7 @@
             formData.append('_token', '{{ csrf_token() }}');
 
             try {
-                const res = await fetch(`/transactions/rentals/${currentRentalId}/upload-proof`, {
+                const res = await fetch(`/transactions-rentals/${currentRentalId}/upload-proof`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'

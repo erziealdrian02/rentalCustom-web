@@ -203,7 +203,7 @@
 
             if (user) {
                 title.textContent = 'Edit User';
-                form.action = `/master/users/update/${user.id}`;
+                form.action = `/users/update/${user.id}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 document.getElementById('f-name').value = user.name;

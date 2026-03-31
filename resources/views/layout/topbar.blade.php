@@ -21,9 +21,78 @@
             </svg>
         </button>
 
-        <h2 id="page-title" class="text-lg md:text-xl font-bold text-gray-900">
-            @yield('page_title', 'Dashboard')
-        </h2>
+        @php
+            $segments = request()->segments();
+            $defaultTitle = 'Dashboard';
+            if (count($segments) > 0) {
+                // Determine a basic text fallback for the title
+                $lastSegment = end($segments);
+                if (is_numeric($lastSegment) && count($segments) > 1) {
+                    $lastSegment = prev($segments);
+                }
+                $defaultTitle = ucwords(str_replace(['-', '_'], ' ', $lastSegment));
+            }
+        @endphp
+
+        <div class="flex flex-col md:ml-1">
+            <h2 id="page-title" class="text-lg md:text-xl font-bold text-gray-900 leading-tight">
+                @hasSection('page_title')
+                    @yield('page_title')
+                @else
+                    {{ $defaultTitle }}
+                @endif
+            </h2>
+
+            @if(count($segments) > 0)
+            <nav class="flex mt-0.5" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2 text-xs md:text-sm text-gray-500">
+                    <li class="inline-flex items-center">
+                        <a href="{{ url('/') }}" class="inline-flex items-center hover:text-blue-600 transition-colors duration-200">
+                            <svg class="w-3 h-3 md:w-3.5 md:h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                            Home
+                        </a>
+                    </li>
+                    @php
+                        $url = '';
+                    @endphp
+                    @foreach($segments as $segment)
+                        @php
+                            $url .= '/' . $segment;
+                            $name = ucwords(str_replace(['-', '_'], ' ', $segment));
+                        @endphp
+                        <li>
+                            <div class="flex items-center">
+                                <svg class="w-3 h-3 md:w-4 md:h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                                @if($loop->last)
+                                    <span class="ml-1 md:ml-2 font-semibold text-blue-600">{{ $name }}</span>
+                                @else
+                                    <a href="{{ url($url) }}" class="ml-1 md:ml-2 hover:text-blue-600 transition-colors duration-200">{{ $name }}</a>
+                                @endif
+                            </div>
+                        </li>
+                    @endforeach
+                </ol>
+            </nav>
+            @else
+            {{-- Breadcrumbs fallback for root dashboard --}}
+            <nav class="flex mt-0.5" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-2 text-xs md:text-sm text-gray-500">
+                    <li class="inline-flex items-center">
+                        <span class="inline-flex items-center text-blue-600 font-semibold">
+                            <svg class="w-3 h-3 md:w-3.5 md:h-3.5 mr-1 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                            </svg>
+                            Dashboard
+                        </span>
+                    </li>
+                </ol>
+            </nav>
+            @endif
+        </div>
     </div>
 
     <div class="flex items-center gap-2 md:gap-4">

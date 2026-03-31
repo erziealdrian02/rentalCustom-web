@@ -291,7 +291,7 @@
 
             if (tool) {
                 title.textContent = `Edit Tool ${tool.code_tools}`;
-                form.action = `/master/tools/update/${tool.id_tools}`;
+                form.action = `/tools/update/${tool.id_tools}`;
                 methodEl.innerHTML = `<input type="hidden" name="_method" value="PUT">`;
 
                 document.getElementById('tool-id').value = tool.id_tools;
